@@ -65,11 +65,11 @@
                     <i class="fa fa-upload"></i> <span>Penjualan</span>
                 </a>
             </li>
-            <!-- <li>
+            <li>
                 <a href="{{ route('transaksi.index') }}">
                     <i class="fa fa-cart-arrow-down"></i> <span>Transaksi Aktif</span>
                 </a>
-            </li> -->
+            </li>
             <li>
                 <a href="{{ route('transaksi.baru') }}">
                     <i class="fa fa-cart-arrow-down"></i> <span>Transaksi Baru</span>
@@ -107,4 +107,5 @@
         </ul>
     </section>
     <!-- /.sidebar -->
+     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </aside>

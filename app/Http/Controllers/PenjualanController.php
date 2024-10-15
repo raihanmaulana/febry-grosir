@@ -19,7 +19,7 @@ class PenjualanController extends Controller
     public function data()
     {
         $penjualan = Penjualan::with('member')->orderBy('id_penjualan', 'desc')->get();
-
+        
         return datatables()
             ->of($penjualan)
             ->addIndexColumn()
@@ -39,8 +39,11 @@ class PenjualanController extends Controller
                 $member = $penjualan->member->kode_member ?? '';
                 return '<span class="label label-success">' . $member . '</spa>';
             })
-            ->editColumn('diskon', function ($penjualan) {
-                return $penjualan->diskon . '%';
+            ->editColumn('diskon_persen', function ($penjualan) {
+                return $penjualan->diskon_persen . '%';
+            })
+            ->editColumn('diskon_rupiah', function ($penjualan) {
+                return 'Rp. ' . $penjualan->diskon_rupiah;
             })
             ->editColumn('kasir', function ($penjualan) {
                 return $penjualan->user->name ?? '';
@@ -63,7 +66,8 @@ class PenjualanController extends Controller
         $penjualan->id_member = null;
         $penjualan->total_item = 0;
         $penjualan->total_harga = 0;
-        $penjualan->diskon = 0;
+        $penjualan->diskon_persen = 0;
+        $penjualan->diskon_rupiah = 0;
         $penjualan->bayar = 0;
         $penjualan->diterima = 0;
         $penjualan->id_user = auth()->id();
@@ -75,41 +79,56 @@ class PenjualanController extends Controller
 
     public function store(Request $request)
     {
-        // Cari data penjualan berdasarkan ID
+
         $penjualan = Penjualan::findOrFail($request->id_penjualan);
 
-        // Hitung total harga setelah diskon
-        $total_harga = $request->total - ($request->diskon / 100 * $request->total);
+        $total_harga = $request->total;
 
-        // Validasi apakah jumlah diterima kurang dari total yang harus dibayar
+        if ($request->has('diskon_rupiah') && $request->diskon_rupiah > 0) {
+           
+            $total_harga = $request->total - $request->diskon_rupiah;
+        }
+        
+        elseif ($request->has('diskon_persen') && $request->diskon_persen > 0) {
+   
+            $total_harga = $request->total - ($request->diskon_persen / 100 * $request->total);
+        }
+
         if ($request->diterima < $total_harga) {
             return redirect()->back()->withErrors(['diterima' => 'Jumlah yang diterima tidak cukup untuk membayar total.'])->withInput();
         }
 
-        // Update data penjualan jika validasi diterima
         $penjualan->id_member = $request->id_member;
         $penjualan->total_item = $request->total_item;
-        $penjualan->total_harga = $total_harga; // Menggunakan total harga yang sudah dihitung ulang
-        $penjualan->diskon = $request->diskon;
-        $penjualan->bayar = $total_harga; // Jumlah yang harus dibayar setelah diskon
+        $penjualan->total_harga = $total_harga; 
+        $penjualan->diskon_persen = $request->diskon_persen ?? 0; 
+        $penjualan->diskon_rupiah = $request->diskon_rupiah ?? 0; 
+        $penjualan->bayar = $total_harga; 
         $penjualan->diterima = $request->diterima;
         $penjualan->update();
 
-        // Update detail penjualan
         $detail = PenjualanDetail::where('id_penjualan', $penjualan->id_penjualan)->get();
         foreach ($detail as $item) {
-            $item->diskon = $request->diskon;
+
+            if ($request->diskon_rupiah > 0) {
+                $item->diskon_rupiah = $request->diskon_rupiah; 
+                $item->diskon_persen = 0; 
+            } else {
+                $item->diskon_persen = $request->diskon_persen ?? 0;
+            }
             $item->update();
 
-            // Update stok produk
             $produk = Produk::find($item->id_produk);
-            $produk->stok -= $item->jumlah;
-            $produk->update();
+            if ($produk) {
+                $produk->stok -= $item->jumlah; 
+                $produk->update();
+            }
         }
-
-        // Arahkan ke transaksi selesai jika semua validasi lolos
+    
         return redirect()->route('transaksi.selesai');
     }
+
+
 
 
     public function show($id)

@@ -1,7 +1,7 @@
 @extends('layouts.master')
 
 @section('title')
-    Transaksi Pembelian
+Transaksi Pembelian
 @endsection
 
 @push('css')
@@ -32,8 +32,8 @@
 @endpush
 
 @section('breadcrumb')
-    @parent
-    <li class="active">Transaksi Pembelian</li>
+@parent
+<li class="active">Transaksi Pembelian</li>
 @endsection
 
 @section('content')
@@ -57,7 +57,7 @@
                 </table>
             </div>
             <div class="box-body">
-                    
+
                 <form class="form-produk">
                     @csrf
                     <div class="form-group row">
@@ -107,9 +107,15 @@
                                 </div>
                             </div>
                             <div class="form-group row">
-                                <label for="diskon" class="col-lg-2 control-label">Diskon</label>
+                                <label for="diskon_persen" class="col-lg-2 control-label">Diskon %</label>
                                 <div class="col-lg-8">
-                                    <input type="number" name="diskon" id="diskon" class="form-control" value="{{ $diskon }}">
+                                    <input type="number" name="diskon_persen" id="diskon_persen" class="form-control" value="{{ $diskon_persen }}">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="diskon_rupiah" class="col-lg-2 control-label">Diskon Rupiah</label>
+                                <div class="col-lg-8">
+                                    <input type="number" name="diskon_rupiah" id="diskon_rupiah" class="form-control" value="{{ $diskon_rupiah }}">
                                 </div>
                             </div>
                             <div class="form-group row">
@@ -137,34 +143,51 @@
 <script>
     let table, table2;
 
-    $(function () {
+    $(function() {
         $('body').addClass('sidebar-collapse');
 
         table = $('.table-pembelian').DataTable({
-            processing: true,
-            autoWidth: false,
-            ajax: {
-                url: '{{ route('pembelian_detail.data', $id_pembelian) }}',
-            },
-            columns: [
-                {data: 'DT_RowIndex', searchable: false, sortable: false},
-                {data: 'kode_produk'},
-                {data: 'nama_produk'},
-                {data: 'harga_beli'},
-                {data: 'jumlah'},
-                {data: 'subtotal'},
-                {data: 'aksi', searchable: false, sortable: false},
-            ],
-            dom: 'Brt',
-            bSort: false,
-            paginate: false
-        })
-        .on('draw.dt', function () {
-            loadForm($('#diskon').val());
-        });
+                processing: true,
+                autoWidth: false,
+                ajax: {
+                    url: "{{ route('pembelian_detail.data ', $id_pembelian) }}",
+                },
+                columns: [{
+                        data: 'DT_RowIndex',
+                        searchable: false,
+                        sortable: false
+                    },
+                    {
+                        data: 'kode_produk'
+                    },
+                    {
+                        data: 'nama_produk'
+                    },
+                    {
+                        data: 'harga_beli'
+                    },
+                    {
+                        data: 'jumlah'
+                    },
+                    {
+                        data: 'subtotal'
+                    },
+                    {
+                        data: 'aksi',
+                        searchable: false,
+                        sortable: false
+                    },
+                ],
+                dom: 'Brt',
+                bSort: false,
+                paginate: false
+            })
+            .on('draw.dt', function() {
+                loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val());
+            });
         table2 = $('.table-produk').DataTable();
 
-        $(document).on('input', '.quantity', function () {
+        $(document).on('input', '.quantity', function() {
             let id = $(this).data('id');
             let jumlah = parseInt($(this).val());
 
@@ -185,8 +208,8 @@
                     'jumlah': jumlah
                 })
                 .done(response => {
-                    $(this).on('mouseout', function () {
-                        table.ajax.reload(() => loadForm($('#diskon').val()));
+                    $(this).on('mouseout', function() {
+                        table.ajax.reload(() => loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val()));
                     });
                 })
                 .fail(errors => {
@@ -195,18 +218,39 @@
                 });
         });
 
-        $(document).on('input', '#diskon', function () {
+        $(document).on('input', '#diskon_persen, #diskon_rupiah', function() {
             if ($(this).val() == "") {
                 $(this).val(0).select();
             }
 
-            loadForm($(this).val());
+            loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val());
         });
 
-        $('.btn-simpan').on('click', function () {
+        $('.btn-simpan').on('click', function() {
             $('.form-pembelian').submit();
         });
     });
+
+    // Fungsi untuk load form dengan pengkondisian diskon persen atau rupiah
+    function loadForm(diskonPersen, diskonRupiah) {
+        let total = parseFloat($('#total').val());
+        let diskon = 0;
+
+        // Jika diskon rupiah ada dan lebih besar dari 0, gunakan diskon rupiah
+        if (diskonRupiah > 0) {
+            diskon = diskonRupiah;
+        }
+        // Jika tidak ada diskon rupiah, gunakan diskon persen
+        else if (diskonPersen > 0) {
+            diskon = (diskonPersen / 100) * total;
+        }
+
+        let bayar = total - diskon;
+
+        $('#total_bayar').val(bayar);
+        $('#total_bayar_rupiah').text('Rp. ' + bayar.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'));
+    }
+
 
     function tampilProduk() {
         $('#modal-produk').modal('show');
@@ -224,7 +268,8 @@
     }
 
     function tambahProduk() {
-        $.post('{{ route('pembelian_detail.store') }}', $('.form-produk').serialize())
+        $.post('{{ route('
+                pembelian_detail.store ') }}', $('.form-produk').serialize())
             .done(response => {
                 $('#kode_produk').focus();
                 table.ajax.reload(() => loadForm($('#diskon').val()));
@@ -257,16 +302,47 @@
 
         $.get(`{{ url('/pembelian_detail/loadform') }}/${diskon}/${$('.total').text()}`)
             .done(response => {
-                $('#totalrp').val('Rp. '+ response.totalrp);
-                $('#bayarrp').val('Rp. '+ response.bayarrp);
+                $('#totalrp').val('Rp. ' + response.totalrp);
+                $('#bayarrp').val('Rp. ' + response.bayarrp);
                 $('#bayar').val(response.bayar);
-                $('.tampil-bayar').text('Rp. '+ response.bayarrp);
+                $('.tampil-bayar').text('Rp. ' + response.bayarrp);
                 $('.tampil-terbilang').text(response.terbilang);
             })
             .fail(errors => {
                 alert('Tidak dapat menampilkan data');
                 return;
             })
+    }
+
+    function enterKodeProduk(event) {
+        if (event.key === "Enter") {
+            event.preventDefault(); // Mencegah form submit default
+
+            let kode_produk = document.getElementById('kode_produk').value;
+
+            if (kode_produk) {
+                // Lakukan sesuatu dengan kode produk, misalnya tambahkan produk ke daftar
+                tambahProduk(kode_produk);
+            } else {
+                alert('Silakan masukkan kode produk.');
+            }
+        }
+        return false;
+    }
+
+    function tambahProduk(kode_produk) {
+        $.post("{{ route('transaksi.store')}}", {
+                _token: $('[name=csrf-token]').attr('content'),
+                id_penjualan: $('#id_penjualan').val(),
+                kode_produk: kode_produk
+            })
+            .done(response => {
+                $('#kode_produk').val(''); // Kosongkan input setelah berhasil
+                alert('Produk berhasil ditambahkan');
+            })
+            .fail(errors => {
+                alert('Tidak dapat menyimpan data');
+            });
     }
 </script>
 @endpush

@@ -19,7 +19,8 @@ class BuatPenjualanDetailTable extends Migration
             $table->integer('id_produk');
             $table->integer('harga_jual');
             $table->integer('jumlah');
-            $table->tinyInteger('diskon')->default(0);
+            $table->tinyInteger('diskon_persen')->default(0);
+            $table->integer('diskon_rupiah')->default(0);
             $table->integer('subtotal');
             $table->timestamps();
         });

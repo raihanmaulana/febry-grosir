@@ -39,8 +39,11 @@ class PembelianController extends Controller
             ->addColumn('supplier', function ($pembelian) {
                 return $pembelian->supplier->nama;
             })
-            ->editColumn('diskon', function ($pembelian) {
-                return $pembelian->diskon . '%';
+            ->editColumn('diskon_persen', function ($pembelian) {
+                return $pembelian->diskon_persen . '%';
+            })
+            ->editColumn('diskon_rupiah', function ($pembelian) {
+                return $pembelian->diskon_rupiah . '%';
             })
             ->addColumn('aksi', function ($pembelian) {
                 return '
@@ -60,7 +63,8 @@ class PembelianController extends Controller
         $pembelian->id_supplier = $id;
         $pembelian->total_item  = 0;
         $pembelian->total_harga = 0;
-        $pembelian->diskon      = 0;
+        $pembelian->diskon_persen = 0;
+        $pembelian->diskon_rupiah = 0;
         $pembelian->bayar       = 0;
         $pembelian->save();
 
@@ -75,7 +79,8 @@ class PembelianController extends Controller
         $pembelian = Pembelian::findOrFail($request->id_pembelian);
         $pembelian->total_item = $request->total_item;
         $pembelian->total_harga = $request->total;
-        $pembelian->diskon = $request->diskon;
+        $pembelian->diskon_persen = $request->diskon_persen;
+        $pembelian->diskon_rupiah = $request->diskon_rupiah;
         $pembelian->bayar = $request->bayar;
         $pembelian->update();
 

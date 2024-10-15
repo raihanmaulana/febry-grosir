@@ -20,7 +20,7 @@ class BuatSettingTable extends Migration
             $table->string('telepon');
             $table->tinyInteger('tipe_nota');
             $table->string('path_logo');
-            $table->string('path_kartu_member');
+            // $table->string('path_kartu_member');
             $table->timestamps();
         });
     }

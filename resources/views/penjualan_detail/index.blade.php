@@ -28,6 +28,13 @@ Transaksi Penjualan
             padding-top: 5px;
         }
     }
+
+    #reader {
+        margin-top: 20px;
+        width: 300px;
+        height: auto;
+        border: 1px solid #ccc;
+    }
 </style>
 @endpush
 
@@ -50,14 +57,18 @@ Transaksi Penjualan
                             <div class="input-group">
                                 <input type="hidden" name="id_penjualan" id="id_penjualan" value="{{ $id_penjualan }}">
                                 <input type="hidden" name="id_produk" id="id_produk">
-                                <input type="text" class="form-control" name="kode_produk" id="kode_produk">
+                                <input type="text" class="form-control" name="kode_produk" id="kode_produk" onkeypress="return enterKodeProduk(event)">
                                 <span class="input-group-btn">
                                     <button onclick="tampilProduk()" class="btn btn-info btn-flat" type="button"><i class="fa fa-arrow-right"></i></button>
+                                    <button onclick="scanBarcode()" class="btn btn-success btn-flat" type="button">Scan Barcode</button>
                                 </span>
                             </div>
                         </div>
                     </div>
                 </form>
+
+                <!-- Div untuk menampilkan preview kamera -->
+                <div id="reader" style="width: 300px;"></div>
 
                 <table class="table table-stiped table-bordered table-penjualan">
                     <thead>
@@ -66,7 +77,8 @@ Transaksi Penjualan
                         <th>Nama</th>
                         <th>Harga</th>
                         <th width="15%">Jumlah</th>
-                        <th>Diskon</th>
+                        <th>Diskon %</th>
+                        <th>Diskon Rupiah</th>
                         <th>Subtotal</th>
                         <th width="15%"><i class="fa fa-cog"></i></th>
                     </thead>
@@ -103,14 +115,22 @@ Transaksi Penjualan
                                     </div>
                                 </div>
                             </div> -->
-                            <div class="form-group row">
-                                <label for="diskon" class="col-lg-2 control-label">Diskon</label>
+                            <!-- <div class="form-group row">
+                                <label for="diskon_persen" class="col-lg-2 control-label">Diskon %</label>
                                 <div class="col-lg-8">
-                                    <input type="number" name="diskon" id="diskon" class="form-control"
-                                        value="{{ ! empty($memberSelected->id_member) ? $diskon : 0 }}"
+                                    <input type="number" name="diskon_persen" id="diskon_persen" class="form-control"
+                                        value="{{ ! empty($memberSelected->id_member) ? $diskon_persen : 0 }}"
                                         readonly>
                                 </div>
                             </div>
+                            <div class="form-group row">
+                                <label for="diskon_rupiah" class="col-lg-2 control-label">Diskon Rupiah</label>
+                                <div class="col-lg-8">
+                                    <input type="number" name="diskon_rupiah" id="diskon_rupiah" class="form-control"
+                                        value="{{ ! empty($memberSelected->id_member) ? $diskon_rupiah : 0 }}"
+                                        readonly>
+                                </div>
+                            </div> -->
                             <div class="form-group row">
                                 <label for="bayar" class="col-lg-2 control-label">Bayar</label>
                                 <div class="col-lg-8">
@@ -164,6 +184,8 @@ Transaksi Penjualan
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
 <script>
     let table, table2;
 
@@ -194,7 +216,10 @@ Transaksi Penjualan
                         data: 'jumlah'
                     },
                     {
-                        data: 'diskon'
+                        data: 'diskon_persen'
+                    },
+                    {
+                        data: 'diskon_rupiah'
                     },
                     {
                         data: 'subtotal'
@@ -210,7 +235,7 @@ Transaksi Penjualan
                 paginate: false
             })
             .on('draw.dt', function() {
-                loadForm($('#diskon').val());
+                loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val());
                 setTimeout(() => {
                     $('#diterima').trigger('input');
                 }, 300);
@@ -239,7 +264,7 @@ Transaksi Penjualan
                 })
                 .done(response => {
                     $(this).on('mouseout', function() {
-                        table.ajax.reload(() => loadForm($('#diskon').val()));
+                        table.ajax.reload(() => loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val()));
                     });
                 })
                 .fail(errors => {
@@ -248,20 +273,20 @@ Transaksi Penjualan
                 });
         });
 
-        $(document).on('input', '#diskon', function() {
+        $(document).on('input', '#diskon_persen, #diskon_rupiah', function() {
             if ($(this).val() == "") {
                 $(this).val(0).select();
             }
 
-            loadForm($(this).val());
+            loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val());
         });
 
         $('#diterima').on('input', function() {
             if ($(this).val() == "") {
                 $(this).val(0).select();
             }
-
-            loadForm($('#diskon').val(), $(this).val());
+            console.log("Nilai diterima:", $(this).val()); // Tambahkan log ini
+            loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val(), $(this).val());
         }).focus(function() {
             $(this).select();
         });
@@ -270,6 +295,32 @@ Transaksi Penjualan
             $('.form-penjualan').submit();
         });
     });
+
+    // Fungsi untuk load form dengan pengkondisian diskon persen atau rupiah
+    function loadForm(diskonPersen, diskonRupiah, diterima = 0) {
+        let total = parseFloat($('#total').val());
+        let diskon = 0;
+        console.log("Mengirim nilai diterima:", diterima);
+        // Jika diskon rupiah ada dan lebih besar dari 0, gunakan diskon rupiah
+        if (diskonRupiah > 0) {
+            diskon = diskonRupiah;
+        }
+        // Jika tidak ada diskon rupiah, gunakan diskon persen
+        else if (diskonPersen > 0) {
+            diskon = (diskonPersen / 100) * total;
+        }
+
+        let bayar = total - diskon;
+
+        $('#total_bayar').val(bayar);
+        $('#total_bayar_rupiah').text('Rp. ' + bayar.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'));
+
+        // Cek apakah jumlah diterima lebih kecil dari total bayar
+        let kembalian = diterima - bayar;
+        $('#kembalian').val(kembalian);
+        $('#kembalian_rupiah').text('Rp. ' + kembalian.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'));
+    }
+
 
     function tampilProduk() {
         $('#modal-produk').modal('show');
@@ -286,17 +337,44 @@ Transaksi Penjualan
         tambahProduk();
     }
 
+    function enterKodeProduk(event) {
+        if (event.key === "Enter") {
+            event.preventDefault(); // Mencegah form submit default
+
+            // Ambil kode produk yang dimasukkan
+            const kodeProduk = $('#kode_produk').val().trim(); // Trim untuk menghilangkan spasi
+
+            // Kirim permintaan ke server untuk mendapatkan data produk
+            $.get(`{{ url('/transaksi/get-product-by-code') }}`, {
+                    kode_produk: kodeProduk
+                })
+                .done(response => {
+                    // Jika produk ditemukan, masukkan ke transaksi
+                    $('#id_produk').val(response.id_produk); // Set ID produk
+                    $('#kode_produk').val(response.kode_produk); // Set kode produk
+                    tambahProduk(); // Panggil fungsi untuk menambah produk
+                })
+                .fail(error => {
+                    alert('Kode produk tidak ditemukan. Silakan periksa kembali kode produk.');
+                });
+        }
+        return false;
+    }
+
+    // Fungsi untuk menambah produk berdasarkan form
     function tambahProduk() {
         $.post("{{ route('transaksi.store')}}", $('.form-produk').serialize())
             .done(response => {
-                $('#kode_produk').focus();
-                table.ajax.reload(() => loadForm($('#diskon').val()));
+                $('#kode_produk').val(''); // Kosongkan input kode produk setelah submit berhasil
+                $('#kode_produk').focus(); // Kembalikan fokus ke input
+                table.ajax.reload(() => loadForm($('#diskon').val())); // Reload table
             })
             .fail(errors => {
                 alert('Tidak dapat menyimpan data');
                 return;
             });
     }
+
 
     function tampilMember() {
         $('#modal-member').modal('show');
@@ -305,11 +383,26 @@ Transaksi Penjualan
     function pilihMember(id, kode) {
         $('#id_member').val(id);
         $('#kode_member').val(kode);
-        $('#diskon').val('{{ $diskon }}');
+
+        // Mengambil diskon persentase dan rupiah dari server atau variabel yang relevan
+        let diskonPersen = '{{ $diskon_persen }}'; // Misalkan kamu memiliki variabel ini dari server
+        let diskonRupiah = '{{ $diskon_rupiah }}'; // Misalkan kamu juga memiliki variabel ini
+
+        // Memilih diskon yang akan diterapkan, jika diskon rupiah lebih dari 0, maka digunakan
+        if (diskonRupiah > 0) {
+            $('#diskon').val(diskonRupiah);
+        } else if (diskonPersen > 0) {
+            $('#diskon').val(diskonPersen);
+        } else {
+            $('#diskon').val(0); // Jika tidak ada diskon
+        }
+
+        // Memanggil fungsi loadForm dengan diskon yang dipilih
         loadForm($('#diskon').val());
         $('#diterima').val(0).focus().select();
         hideMember();
     }
+
 
     function hideMember() {
         $('#modal-member').modal('hide');
@@ -331,11 +424,13 @@ Transaksi Penjualan
         }
     }
 
-    function loadForm(diskon = 0, diterima = 0) {
-        $('#total').val($('.total').text());
-        $('#total_item').val($('.total_item').text());
+    function loadForm(diskonPersen = 0, diskonRupiah = 0, diterima = 0) {
+        let total = $('.total').text();
 
-        $.get(`{{ url('/transaksi/loadform') }}/${diskon}/${$('.total').text()}/${diterima}`)
+        // Pastikan log ini menampilkan nilai diterima yang benar
+        console.log("Mengirim nilai diterima:", diterima);
+
+        $.get(`{{ url('/transaksi/loadform') }}/${diskonPersen}/${total}/${diterima}`)
             .done(response => {
                 $('#totalrp').val('Rp. ' + response.totalrp);
                 $('#bayarrp').val('Rp. ' + response.bayarrp);
@@ -351,8 +446,69 @@ Transaksi Penjualan
             })
             .fail(errors => {
                 alert('Tidak dapat menampilkan data');
-                return;
-            })
+            });
+    }
+
+    $(document).on('input', '#diterima', function() {
+        $('#total').val($('.total').text()); // Set nilai total
+        $('#total_item').val($('.total_item').text()); // Set nilai total_item
+        loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val(), $(this).val());
+    });
+
+    // Fungsi untuk memulai proses scan barcode dari kamera
+    function scanBarcode() {
+        const html5QrCode = new Html5Qrcode("reader");
+
+        // Mendapatkan kamera yang tersedia
+        Html5Qrcode.getCameras().then(devices => {
+            if (devices && devices.length) {
+                // Jika ada kamera, pilih kamera pertama
+                let cameraId = devices[0].id;
+
+                // Memulai scanner dengan kamera yang dipilih
+                html5QrCode.start(
+                        cameraId, {
+                            fps: 10, // Frame per detik
+                            qrbox: {
+                                width: 250,
+                                height: 250
+                            } // Ukuran area scan
+                        },
+                        (decodedText, decodedResult) => {
+                            // Jika kode barcode berhasil di-scan
+                            $('#kode_produk').val(decodedText); // Isi input kode_produk dengan hasil scan
+
+                            // Kirim permintaan ke server untuk mendapatkan data produk
+                            $.get(`{{ url('/transaksi/get-product-by-code') }}`, {
+                                    kode_produk: decodedText // Menggunakan kode produk yang di-scan
+                                })
+                                .done(response => {
+                                    // Jika produk ditemukan, masukkan ID produk dan panggil tambahProduk
+                                    $('#id_produk').val(response.id_produk); // Set ID produk
+                                    $('#kode_produk').val(response.kode_produk); // Set kode produk
+
+                                    // Memanggil fungsi tambahProduk setelah produk ditemukan
+                                    tambahProduk();
+                                })
+                                .fail(error => {
+                                    alert('Kode produk tidak ditemukan. Silakan periksa kembali kode produk.');
+                                });
+
+                            // Hentikan scan setelah barcode ditemukan
+                            html5QrCode.stop();
+                        },
+                        (errorMessage) => {
+                            // Jika terjadi error, bisa dihandle disini (optional)
+                            console.log(`Scanning error: ${errorMessage}`);
+                        })
+                    .catch(err => {
+                        // Handle error jika kamera tidak bisa digunakan
+                        console.log(`Camera error: ${err}`);
+                    });
+            }
+        }).catch(err => {
+            console.log(`Error mendapatkan kamera: ${err}`);
+        });
     }
 </script>
 @endpush

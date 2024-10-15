@@ -20,9 +20,10 @@ class SettingTableSeeder extends Seeder
             'alamat' => 'Semarang',
             'telepon' => '08123121212',
             'tipe_nota' => 1, // kecil
-            'diskon' => 5,
+            'diskon_persen' => 5,
+            'diskon_rupiah' => 0,
             'path_logo' => '/img/logo.png',
-            'path_kartu_member' => '/img/member.png',
+            // 'path_kartu_member' => '/img/member.png',
         ]);
     }
 }

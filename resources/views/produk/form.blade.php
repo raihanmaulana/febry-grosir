@@ -52,9 +52,16 @@
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label for="diskon" class="col-lg-2 col-lg-offset-1 control-label">Diskon</label>
+                        <label for="diskon_persen" class="col-lg-2 col-lg-offset-1 control-label">Diskon Persen</label>
                         <div class="col-lg-6">
-                            <input type="number" name="diskon" id="diskon" class="form-control" value="0">
+                            <input type="number" name="diskon_persen" id="diskon_persen" class="form-control" value="0">
+                            <span class="help-block with-errors"></span>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="diskon_rupiah" class="col-lg-2 col-lg-offset-1 control-label">Diskon Rupiah</label>
+                        <div class="col-lg-6">
+                            <input type="number" name="diskon_rupiah" id="diskon_rupiah" class="form-control" value="0">
                             <span class="help-block with-errors"></span>
                         </div>
                     </div>

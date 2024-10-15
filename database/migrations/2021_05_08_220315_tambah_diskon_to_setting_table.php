@@ -14,9 +14,12 @@ class TambahDiskonToSettingTable extends Migration
     public function up()
     {
         Schema::table('setting', function (Blueprint $table) {
-            $table->smallInteger('diskon')
+            $table->smallInteger('diskon_persen')
                   ->default(0)
                   ->after('tipe_nota');
+            $table->integer('diskon_rupiah')
+            ->default(0)
+            ->after('diskon_persen');
         });
     }
 
@@ -28,7 +31,6 @@ class TambahDiskonToSettingTable extends Migration
     public function down()
     {
         Schema::table('setting', function (Blueprint $table) {
-            $table->dropColumn('diskon');
         });
     }
 }

@@ -15,14 +15,15 @@ class PenjualanDetailController extends Controller
     {
         $produk = Produk::orderBy('nama_produk')->get();
         $member = Member::orderBy('nama')->get();
-        $diskon = Setting::first()->diskon ?? 0;
+        $diskon_persen = Setting::first()->diskon_persen ?? 0;
+        $diskon_rupiah = Setting::first()->diskon_rupiah ?? 0;
 
         // Cek apakah ada transaksi yang sedang berjalan
         if ($id_penjualan = session('id_penjualan')) {
             $penjualan = Penjualan::find($id_penjualan);
             $memberSelected = $penjualan->member ?? new Member();
 
-            return view('penjualan_detail.index', compact('produk', 'member', 'diskon', 'id_penjualan', 'penjualan', 'memberSelected'));
+            return view('penjualan_detail.index', compact('produk', 'member', 'diskon_persen','diskon_rupiah', 'id_penjualan', 'penjualan', 'memberSelected'));
         } else {
             if (auth()->user()->level == 1) {
                 return redirect()->route('transaksi.baru');
@@ -35,7 +36,7 @@ class PenjualanDetailController extends Controller
     public function data($id)
     {
         $detail = PenjualanDetail::with('produk')
-            ->where('id_penjualan', $id)
+        ->where('id_penjualan', $id)
             ->get();
 
         $data = array();
@@ -44,31 +45,55 @@ class PenjualanDetailController extends Controller
 
         foreach ($detail as $item) {
             $row = array();
-            $row['kode_produk'] = '<span class="label label-success">' . $item->produk['kode_produk'] . '</span';
+            $row['kode_produk'] = '<span class="label label-success">' . $item->produk['kode_produk'] . '</span>';
             $row['nama_produk'] = $item->produk['nama_produk'];
             $row['harga_jual']  = 'Rp. ' . format_uang($item->harga_jual);
             $row['jumlah']      = '<input type="number" class="form-control input-sm quantity" data-id="' . $item->id_penjualan_detail . '" value="' . $item->jumlah . '">';
-            $row['diskon']      = $item->diskon . '%';
-            $row['subtotal']    = 'Rp. ' . format_uang($item->subtotal);
-            $row['aksi']        = '<div class="btn-group">
-                                    <button onclick="deleteData(`' . route('transaksi.destroy', $item->id_penjualan_detail) . '`)" class="btn btn-xs btn-danger btn-flat"><i class="fa fa-trash"></i></button>
-                                </div>';
+            $row['diskon_persen'] = $item->diskon_persen . '%';
+            $row['diskon_rupiah'] = 'Rp. ' . format_uang($item->diskon_rupiah);
+
+            // Hitung subtotal dengan memperhitungkan diskon
+            $subtotal = $item->harga_jual * $item->jumlah;
+            if ($item->diskon_persen > 0) {
+                $subtotal -= ($item->diskon_persen / 100) * $subtotal;
+            } elseif ($item->diskon_rupiah > 0) {
+                $subtotal -= $item->diskon_rupiah * $item->jumlah;
+            }
+
+            $row['subtotal'] = 'Rp. ' . format_uang($subtotal);
+            $row['aksi'] = '<div class="btn-group">
+                            <button onclick="deleteData(`' . route('transaksi.destroy', $item->id_penjualan_detail) . '`)" class="btn btn-xs btn-danger btn-flat"><i class="fa fa-trash"></i></button>
+                        </div>';
             $data[] = $row;
 
-            $total += $item->harga_jual * $item->jumlah;
+            // Log data setiap item untuk melihat apa yang dikirim
+            \Log::info('Data Item:', $row);
+
+            // Total dihitung berdasarkan subtotal setelah diskon
+            $total += $subtotal;
             $total_item += $item->jumlah;
         }
+
+        // Log total keseluruhan dan jumlah item
+        \Log::info('Total Harga: ' . $total);
+        \Log::info('Total Item: ' . $total_item);
+
+        // Tambahkan data total ke dalam tabel
         $data[] = [
             'kode_produk' => '
-                <div class="total hide">' . $total . '</div>
-                <div class="total_item hide">' . $total_item . '</div>',
+        <div class="total hide">' . $total . '</div>
+        <div class="total_item hide">' . $total_item . '</div>',
             'nama_produk' => '',
             'harga_jual'  => '',
             'jumlah'      => '',
-            'diskon'      => '',
+            'diskon_persen' => '',
+            'diskon_rupiah' => '',
             'subtotal'    => '',
             'aksi'        => '',
         ];
+
+        // Log untuk melihat total dan total item yang dikirim sebagai elemen tersembunyi
+        \Log::info('Final Total:', ['total' => $total, 'total_item' => $total_item]);
 
         return datatables()
             ->of($data)
@@ -76,6 +101,8 @@ class PenjualanDetailController extends Controller
             ->rawColumns(['aksi', 'kode_produk', 'jumlah'])
             ->make(true);
     }
+
+
 
     public function store(Request $request)
     {
@@ -89,10 +116,11 @@ class PenjualanDetailController extends Controller
         $detail->id_produk = $produk->id_produk;
         $detail->harga_jual = $produk->harga_jual;
         $detail->jumlah = 1;
-        $detail->diskon = 0;
+        $detail->diskon_persen = $produk->diskon_persen;
+        $detail->diskon_rupiah = $produk->diskon_rupiah;
         $detail->subtotal = $produk->harga_jual;
         $detail->save();
-
+        
         return response()->json('Data berhasil disimpan', 200);
     }
 
@@ -114,22 +142,42 @@ class PenjualanDetailController extends Controller
 
     public function loadForm($diskon = 0, $total = 0, $diterima = 0)
     {
-        // Hitung jumlah yang harus dibayar setelah diskon
-        $bayar = $total - ($diskon / 100 * $total);
+        // Log untuk memeriksa apakah nilai yang dikirim benar
+        \Log::info('Total yang diterima di loadForm (sudah didiskon): ' . $total);
+        \Log::info('Diterima: ' . $diterima);
+
+        // Pada tahap ini, diskon sudah diterapkan di fungsi data, jadi kita tidak menghitung diskon lagi
+        $bayar = $total; // Total yang diterima sudah merupakan total setelah diskon
+
+        // Pastikan nilai tidak menjadi negatif
+        if ($bayar < 0) {
+            $bayar = 0;
+        }
 
         // Hitung kembalian hanya jika ada pembayaran yang diterima
         $kembali = ($diterima > 0) ? $diterima - $bayar : 0;
 
         // Siapkan data yang akan dikirim ke view
-        $data = [
-            'totalrp' => format_uang($total), // Format total tanpa diskon
-            'bayar' => $bayar,                // Total setelah diskon
-            'bayarrp' => format_uang($bayar), // Format total setelah diskon
+        return response()->json([
+            'totalrp' => format_uang($total),
+            'bayarrp' => format_uang($bayar),
+            'bayar' => $bayar,
             'terbilang' => ucwords(terbilang($bayar) . ' Rupiah'),
-            'kembalirp' => format_uang($kembali), // Kembalian
+            'kembalirp' => format_uang($kembali),
             'kembali_terbilang' => ucwords(terbilang($kembali) . ' Rupiah'),
-        ];
-
-        return response()->json($data);
+        ]);
     }
+
+    public function getProductByCode(Request $request)
+    {
+        $kodeProduk = $request->kode_produk;
+        $produk = Produk::where('kode_produk', $kodeProduk)->first();
+
+        if ($produk) {
+            return response()->json($produk);
+        }
+
+        return response()->json(['message' => 'Produk tidak ditemukan.'], 404);
+    }
+
 }

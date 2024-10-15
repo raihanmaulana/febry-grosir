@@ -15,13 +15,14 @@ class PembelianDetailController extends Controller
         $id_pembelian = session('id_pembelian');
         $produk = Produk::orderBy('nama_produk')->get();
         $supplier = Supplier::find(session('id_supplier'));
-        $diskon = Pembelian::find($id_pembelian)->diskon ?? 0;
+        $diskon_persen = Pembelian::find($id_pembelian)->diskon_persen ?? 0;
+        $diskon_rupiah = Pembelian::find($id_pembelian)->diskon_rupiah ?? 0;
 
         if (! $supplier) {
             abort(404);
         }
 
-        return view('pembelian_detail.index', compact('id_pembelian', 'produk', 'supplier', 'diskon'));
+        return view('pembelian_detail.index', compact('id_pembelian', 'produk', 'supplier', 'diskon_persen', 'diskon_rupiah'));
     }
 
     public function data($id)
@@ -100,16 +101,29 @@ class PembelianDetailController extends Controller
         return response(null, 204);
     }
 
-    public function loadForm($diskon, $total)
+    public function loadForm($diskonPersen, $diskonRupiah, $total)
     {
-        $bayar = $total - ($diskon / 100 * $total);
+        // Jika ada diskon rupiah, gunakan diskon rupiah
+        if ($diskonRupiah > 0) {
+            $bayar = $total - $diskonRupiah;
+        }
+        // Jika tidak ada diskon rupiah, cek diskon persen
+        elseif ($diskonPersen > 0) {
+            $bayar = $total - ($diskonPersen / 100 * $total);
+        }
+        // Jika tidak ada diskon, harga tetap
+        else {
+            $bayar = $total;
+        }
+
         $data  = [
             'totalrp' => format_uang($total),
             'bayar' => $bayar,
             'bayarrp' => format_uang($bayar),
-            'terbilang' => ucwords(terbilang($bayar). ' Rupiah')
+            'terbilang' => ucwords(terbilang($bayar) . ' Rupiah')
         ];
 
         return response()->json($data);
     }
+
 }

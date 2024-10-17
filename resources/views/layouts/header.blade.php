@@ -1,13 +1,13 @@
 <header class="main-header">
     <!-- Logo -->
-    <a href="index2.html" class="logo">
+    <a href="{{ route('dashboard') }}" class="logo">
         <!-- mini logo for sidebar mini 50x50 pixels -->
         @php
-            $words = explode(' ', $setting->nama_perusahaan);
-            $word  = '';
-            foreach ($words as $w) {
-                $word .= $w[0];
-            }
+        $words = explode(' ', $setting->nama_perusahaan);
+        $word = '';
+        foreach ($words as $w) {
+        $word .= $w[0];
+        }
         @endphp
         <span class="logo-mini">{{ $word }}</span>
         <!-- logo for regular state and mobile devices -->

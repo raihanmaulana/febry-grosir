@@ -48,6 +48,7 @@ class PenjualanDetailController extends Controller
             $row['kode_produk'] = '<span class="label label-success">' . $item->produk['kode_produk'] . '</span>';
             $row['nama_produk'] = $item->produk['nama_produk'];
             $row['harga_jual']  = 'Rp. ' . format_uang($item->harga_jual);
+            $row['harga_grosir']  = 'Rp. ' . format_uang($item->harga_grosir);
             $row['jumlah']      = '<input type="number" class="form-control input-sm quantity" data-id="' . $item->id_penjualan_detail . '" value="' . $item->jumlah . '">';
             $row['diskon_persen'] = $item->diskon_persen . '%';
             $row['diskon_rupiah'] = 'Rp. ' . format_uang($item->diskon_rupiah);
@@ -85,6 +86,7 @@ class PenjualanDetailController extends Controller
         <div class="total_item hide">' . $total_item . '</div>',
             'nama_produk' => '',
             'harga_jual'  => '',
+            'harga_grosir'  => '',
             'jumlah'      => '',
             'diskon_persen' => '',
             'diskon_rupiah' => '',
@@ -115,6 +117,7 @@ class PenjualanDetailController extends Controller
         $detail->id_penjualan = $request->id_penjualan;
         $detail->id_produk = $produk->id_produk;
         $detail->harga_jual = $produk->harga_jual;
+        $detail->harga_grosir = $produk->harga_grosir;
         $detail->jumlah = 1;
         $detail->diskon_persen = $produk->diskon_persen;
         $detail->diskon_rupiah = $produk->diskon_rupiah;

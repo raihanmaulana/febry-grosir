@@ -35,6 +35,7 @@
                             <th>Merk</th>
                             <th>Harga Beli</th>
                             <th>Harga Jual</th>
+                            <th>Harga Grosir</th>
                             <th>Diskon %</th>
                             <th>Diskon Rupiah</th>
                             <th>Stok</th>
@@ -70,6 +71,7 @@
                 {data: 'merk'},
                 {data: 'harga_beli'},
                 {data: 'harga_jual'},
+                {data: 'harga_grosir'},
                 {data: 'diskon_persen'},
                 {data: 'diskon_rupiah'},
                 {data: 'stok'},
@@ -122,6 +124,7 @@
                 $('#modal-form [name=merk]').val(response.merk);
                 $('#modal-form [name=harga_beli]').val(response.harga_beli);
                 $('#modal-form [name=harga_jual]').val(response.harga_jual);
+                $('#modal-form [name=harga_grosir]').val(response.harga_grosir);
                 $('#modal-form [name=diskon_persen]').val(response.diskon_persen);
                 $('#modal-form [name=diskon_rupiah]').val(response.diskon_rupiah);
                 $('#modal-form [name=stok]').val(response.stok);

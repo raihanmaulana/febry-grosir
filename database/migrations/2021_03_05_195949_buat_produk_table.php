@@ -22,6 +22,7 @@ class BuatProdukTable extends Migration
             $table->tinyInteger('diskon_persen')->nullable(0);
             $table->integer('diskon_rupiah')->nullable(0);
             $table->integer('harga_jual');
+            $table->integer('harga_grosir');
             $table->integer('stok');
             $table->timestamps();
         });

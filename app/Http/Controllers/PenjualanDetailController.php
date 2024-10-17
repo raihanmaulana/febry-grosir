@@ -53,7 +53,6 @@ class PenjualanDetailController extends Controller
             $row['diskon_persen'] = $item->diskon_persen . '%';
             $row['diskon_rupiah'] = 'Rp. ' . format_uang($item->diskon_rupiah);
 
-            // Hitung subtotal dengan memperhitungkan diskon
             $subtotal = $item->harga_jual * $item->jumlah;
             if ($item->diskon_persen > 0) {
                 $subtotal -= ($item->diskon_persen / 100) * $subtotal;
@@ -67,19 +66,10 @@ class PenjualanDetailController extends Controller
                         </div>';
             $data[] = $row;
 
-            // Log data setiap item untuk melihat apa yang dikirim
-            \Log::info('Data Item:', $row);
-
-            // Total dihitung berdasarkan subtotal setelah diskon
             $total += $subtotal;
             $total_item += $item->jumlah;
         }
 
-        // Log total keseluruhan dan jumlah item
-        \Log::info('Total Harga: ' . $total);
-        \Log::info('Total Item: ' . $total_item);
-
-        // Tambahkan data total ke dalam tabel
         $data[] = [
             'kode_produk' => '
         <div class="total hide">' . $total . '</div>
@@ -94,8 +84,6 @@ class PenjualanDetailController extends Controller
             'aksi'        => '',
         ];
 
-        // Log untuk melihat total dan total item yang dikirim sebagai elemen tersembunyi
-        \Log::info('Final Total:', ['total' => $total, 'total_item' => $total_item]);
 
         return datatables()
             ->of($data)
@@ -145,11 +133,6 @@ class PenjualanDetailController extends Controller
 
     public function loadForm($diskon = 0, $total = 0, $diterima = 0)
     {
-        // Log untuk memeriksa apakah nilai yang dikirim benar
-        \Log::info('Total yang diterima di loadForm (sudah didiskon): ' . $total);
-        \Log::info('Diterima: ' . $diterima);
-
-        // Pada tahap ini, diskon sudah diterapkan di fungsi data, jadi kita tidak menghitung diskon lagi
         $bayar = $total; // Total yang diterima sudah merupakan total setelah diskon
 
         // Pastikan nilai tidak menjadi negatif

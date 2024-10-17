@@ -52,6 +52,13 @@
                         </div>
                     </div>
                     <div class="form-group row">
+                        <label for="harga_grosir" class="col-lg-2 col-lg-offset-1 control-label">Harga Grosir</label>
+                        <div class="col-lg-6">
+                            <input type="number" name="harga_grosir" id="harga_grosir" class="form-control" required>
+                            <span class="help-block with-errors"></span>
+                        </div>
+                    </div>
+                    <div class="form-group row">
                         <label for="diskon_persen" class="col-lg-2 col-lg-offset-1 control-label">Diskon Persen</label>
                         <div class="col-lg-6">
                             <input type="number" name="diskon_persen" id="diskon_persen" class="form-control" value="0">

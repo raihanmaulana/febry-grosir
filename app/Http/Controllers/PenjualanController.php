@@ -78,55 +78,73 @@ class PenjualanController extends Controller
     }
 
     public function store(Request $request)
-    {
+{
+    // Temukan transaksi penjualan berdasarkan ID
+    $penjualan = Penjualan::findOrFail($request->id_penjualan);
 
-        $penjualan = Penjualan::findOrFail($request->id_penjualan);
+    // Cek apakah ada produk yang sudah ditambahkan ke dalam detail transaksi
+    $detail = PenjualanDetail::where('id_penjualan', $penjualan->id_penjualan)->get();
 
-        $total_harga = $request->total;
-
-        if ($request->has('diskon_rupiah') && $request->diskon_rupiah > 0) {
-           
-            $total_harga = $request->total - $request->diskon_rupiah;
-        }
-        
-        elseif ($request->has('diskon_persen') && $request->diskon_persen > 0) {
-   
-            $total_harga = $request->total - ($request->diskon_persen / 100 * $request->total);
-        }
-
-        if ($request->diterima < $total_harga) {
-            return redirect()->back()->withErrors(['diterima' => 'Jumlah yang diterima tidak cukup untuk membayar total.'])->withInput();
-        }
-
-        $penjualan->id_member = $request->id_member;
-        $penjualan->total_item = $request->total_item;
-        $penjualan->total_harga = $total_harga; 
-        $penjualan->diskon_persen = $request->diskon_persen ?? 0; 
-        $penjualan->diskon_rupiah = $request->diskon_rupiah ?? 0; 
-        $penjualan->bayar = $total_harga; 
-        $penjualan->diterima = $request->diterima;
-        $penjualan->update();
-
-        $detail = PenjualanDetail::where('id_penjualan', $penjualan->id_penjualan)->get();
-        foreach ($detail as $item) {
-
-            if ($request->diskon_rupiah > 0) {
-                $item->diskon_rupiah = $request->diskon_rupiah; 
-                $item->diskon_persen = 0; 
-            } else {
-                $item->diskon_persen = $request->diskon_persen ?? 0;
-            }
-            $item->update();
-
-            $produk = Produk::find($item->id_produk);
-            if ($produk) {
-                $produk->stok -= $item->jumlah; 
-                $produk->update();
-            }
-        }
-    
-        return redirect()->route('transaksi.selesai');
+    // Jika tidak ada detail produk, berikan peringatan tanpa simpan
+    if ($detail->isEmpty()) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Tidak ada produk yang ditambahkan dalam transaksi.'
+        ], 400);
     }
+
+    // Hitung total harga setelah diskon (jika ada)
+    $total_harga = $request->total;
+    if ($request->has('diskon_rupiah') && $request->diskon_rupiah > 0) {
+        $total_harga = $request->total - $request->diskon_rupiah;
+    } elseif ($request->has('diskon_persen') && $request->diskon_persen > 0) {
+        $total_harga = $request->total - ($request->diskon_persen / 100 * $request->total);
+    }
+
+    // Cek apakah jumlah diterima cukup
+    if ($request->diterima < $total_harga) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Jumlah yang diterima tidak cukup untuk membayar total.'
+        ], 400);
+    }
+
+    // Lanjutkan ke update data penjualan jika validasi lulus
+    $penjualan->id_member = $request->id_member;
+    $penjualan->total_item = $request->total_item;
+    $penjualan->total_harga = $total_harga;
+    $penjualan->diskon_persen = $request->diskon_persen ?? 0;
+    $penjualan->diskon_rupiah = $request->diskon_rupiah ?? 0;
+    $penjualan->bayar = $total_harga;
+    $penjualan->diterima = $request->diterima;
+    $penjualan->update();
+
+    // Update detail penjualan dan stok produk
+    foreach ($detail as $item) {
+        if ($request->diskon_rupiah > 0) {
+            $item->diskon_rupiah = $request->diskon_rupiah;
+            $item->diskon_persen = 0;
+        } else {
+            $item->diskon_persen = $request->diskon_persen ?? 0;
+        }
+        $item->update();
+
+        // Kurangi stok produk
+        $produk = Produk::find($item->id_produk);
+        if ($produk) {
+            $produk->stok -= $item->jumlah;
+            $produk->update();
+        }
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Transaksi berhasil disimpan.',
+        'redirect' => route('transaksi.selesai')
+    ]);
+}
+
+
 
 
 
@@ -146,6 +164,9 @@ class PenjualanController extends Controller
             })
             ->addColumn('harga_jual', function ($detail) {
                 return 'Rp. ' . format_uang($detail->harga_jual);
+            })
+            ->addColumn('harga_grosir', function ($detail) {
+                return 'Rp. ' . format_uang($detail->harga_grosir);
             })
             ->addColumn('jumlah', function ($detail) {
                 return format_uang($detail->jumlah);

@@ -90,7 +90,7 @@ Transaksi Penjualan
                         <div class="tampil-terbilang"></div>
                     </div>
                     <div class="col-lg-4">
-                        <form action="{{ route('transaksi.simpan') }}" class="form-penjualan" method="post">
+                        <form id="form-penjualan" class="form-penjualan">
                             @csrf
                             <input type="hidden" name="id_penjualan" value="{{ $id_penjualan }}">
                             <input type="hidden" name="total" id="total">
@@ -104,33 +104,6 @@ Transaksi Penjualan
                                     <input type="text" id="totalrp" class="form-control" readonly>
                                 </div>
                             </div>
-                            <!-- <div class="form-group row">
-                                <label for="kode_member" class="col-lg-2 control-label">Member</label>
-                                <div class="col-lg-8">
-                                    <div class="input-group">
-                                        <input type="text" class="form-control" id="kode_member" value="{{ $memberSelected->kode_member }}">
-                                        <span class="input-group-btn">
-                                            <button onclick="tampilMember()" class="btn btn-info btn-flat" type="button"><i class="fa fa-arrow-right"></i></button>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div> -->
-                            <!-- <div class="form-group row">
-                                <label for="diskon_persen" class="col-lg-2 control-label">Diskon %</label>
-                                <div class="col-lg-8">
-                                    <input type="number" name="diskon_persen" id="diskon_persen" class="form-control"
-                                        value="{{ ! empty($memberSelected->id_member) ? $diskon_persen : 0 }}"
-                                        readonly>
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label for="diskon_rupiah" class="col-lg-2 control-label">Diskon Rupiah</label>
-                                <div class="col-lg-8">
-                                    <input type="number" name="diskon_rupiah" id="diskon_rupiah" class="form-control"
-                                        value="{{ ! empty($memberSelected->id_member) ? $diskon_rupiah : 0 }}"
-                                        readonly>
-                                </div>
-                            </div> -->
                             <div class="form-group row">
                                 <label for="bayar" class="col-lg-2 control-label">Bayar</label>
                                 <div class="col-lg-8">
@@ -156,24 +129,16 @@ Transaksi Penjualan
                                     <input type="text" id="kembali" name="kembali" class="form-control" value="0" readonly>
                                 </div>
                             </div>
+
+                            <div class="box-footer">
+                                <button type="submit" class="btn btn-primary btn-sm btn-flat pull-right btn-simpan"><i class="fa fa-floppy-o"></i> Simpan Transaksi</button>
+                            </div>
                         </form>
                     </div>
                 </div>
-                @if ($errors->any())
-                <script>
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Oops...',
-                        text: "{{ $errors->first('diterima ')}}",
-                        footer: 'Periksa kembali jumlah yang diterima.'
-                    });
-                </script>
-                @endif
             </div>
 
-            <div class="box-footer">
-                <button type="submit" class="btn btn-primary btn-sm btn-flat pull-right btn-simpan"><i class="fa fa-floppy-o"></i> Simpan Transaksi</button>
-            </div>
+
         </div>
     </div>
 </div>
@@ -211,6 +176,9 @@ Transaksi Penjualan
                     },
                     {
                         data: 'harga_jual'
+                    },
+                    {
+                        data: 'harga_grosir'
                     },
                     {
                         data: 'jumlah'
@@ -291,9 +259,9 @@ Transaksi Penjualan
             $(this).select();
         });
 
-        $('.btn-simpan').on('click', function() {
-            $('.form-penjualan').submit();
-        });
+        // $('.btn-simpan').on('click', function() {
+        //     $('.form-penjualan').submit();
+        // });
     });
 
     // Fungsi untuk load form dengan pengkondisian diskon persen atau rupiah
@@ -341,10 +309,9 @@ Transaksi Penjualan
         if (event.key === "Enter") {
             event.preventDefault(); // Mencegah form submit default
 
-            // Ambil kode produk yang dimasukkan
-            const kodeProduk = $('#kode_produk').val().trim(); // Trim untuk menghilangkan spasi
+            const kodeProduk = $('#kode_produk').val().trim(); // Ambil kode produk
 
-            // Kirim permintaan ke server untuk mendapatkan data produk
+            // Kirim permintaan untuk mendapatkan data produk
             $.get(`{{ url('/transaksi/get-product-by-code') }}`, {
                     kode_produk: kodeProduk
                 })
@@ -352,7 +319,8 @@ Transaksi Penjualan
                     // Jika produk ditemukan, masukkan ke transaksi
                     $('#id_produk').val(response.id_produk); // Set ID produk
                     $('#kode_produk').val(response.kode_produk); // Set kode produk
-                    tambahProduk(); // Panggil fungsi untuk menambah produk
+                    // Pastikan produk ditambahkan atau penanganan lain yang diperlukan
+                    tambahProduk(); // Panggil fungsi untuk menambah produk jika perlu
                 })
                 .fail(error => {
                     alert('Kode produk tidak ditemukan. Silakan periksa kembali kode produk.');
@@ -360,6 +328,7 @@ Transaksi Penjualan
         }
         return false;
     }
+
 
     // Fungsi untuk menambah produk berdasarkan form
     function tambahProduk() {
@@ -510,5 +479,43 @@ Transaksi Penjualan
             console.log(`Error mendapatkan kamera: ${err}`);
         });
     }
+
+
+    const submitForm = document.getElementById("form-penjualan")
+
+    submitForm.addEventListener("submit",  (e)=> {
+        e.preventDefault()
+        let form = $('#form-penjualan');
+        let formData = form.serialize();
+
+        console.log(formData); // Log payload untuk memastikan isi sebelum dikirim
+
+        $.ajax({
+            url: "{{ route('transaksi.simpan') }}",
+            type: 'POST',
+            data: formData,
+            success: function(response) {
+                // Jika berhasil, tampilkan pesan sukses
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: response.message,
+                }).then(() => {
+                    // Redirect ke halaman selesai jika diperlukan
+                    window.location.href = response.redirect;
+
+                });
+                console.log({response});
+            },
+            error: function(xhr) {
+                console.log(xhr);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: xhr.responseJSON?.message || 'Terjadi kesalahan, coba lagi!',
+                });
+            }
+        });
+    })
 </script>
 @endpush

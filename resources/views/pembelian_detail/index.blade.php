@@ -268,8 +268,7 @@ Transaksi Pembelian
     }
 
     function tambahProduk() {
-        $.post('{{ route('
-                pembelian_detail.store ') }}', $('.form-produk').serialize())
+        $.post("{{ route('pembelian_detail.store') }}", $('.form-produk').serialize())
             .done(response => {
                 $('#kode_produk').focus();
                 table.ajax.reload(() => loadForm($('#diskon').val()));

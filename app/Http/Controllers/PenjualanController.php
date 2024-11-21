@@ -7,7 +7,7 @@ use App\Models\PenjualanDetail;
 use App\Models\Produk;
 use App\Models\Setting;
 use Illuminate\Http\Request;
-use PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class PenjualanController extends Controller
 {
@@ -19,7 +19,7 @@ class PenjualanController extends Controller
     public function data()
     {
         $penjualan = Penjualan::with('member')->orderBy('id_penjualan', 'desc')->get();
-        
+
         return datatables()
             ->of($penjualan)
             ->addIndexColumn()
@@ -78,75 +78,71 @@ class PenjualanController extends Controller
     }
 
     public function store(Request $request)
-{
-    // Temukan transaksi penjualan berdasarkan ID
-    $penjualan = Penjualan::findOrFail($request->id_penjualan);
+    {
+        // Temukan transaksi penjualan berdasarkan ID
+        $penjualan = Penjualan::findOrFail($request->id_penjualan);
 
-    // Cek apakah ada produk yang sudah ditambahkan ke dalam detail transaksi
-    $detail = PenjualanDetail::where('id_penjualan', $penjualan->id_penjualan)->get();
+        // Cek apakah ada produk yang sudah ditambahkan ke dalam detail transaksi
+        $detail = PenjualanDetail::where('id_penjualan', $penjualan->id_penjualan)->get();
 
-    // Jika tidak ada detail produk, berikan peringatan tanpa simpan
-    if ($detail->isEmpty()) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Tidak ada produk yang ditambahkan dalam transaksi.'
-        ], 400);
-    }
-
-    // Hitung total harga setelah diskon (jika ada)
-    $total_harga = $request->total;
-    if ($request->has('diskon_rupiah') && $request->diskon_rupiah > 0) {
-        $total_harga = $request->total - $request->diskon_rupiah;
-    } elseif ($request->has('diskon_persen') && $request->diskon_persen > 0) {
-        $total_harga = $request->total - ($request->diskon_persen / 100 * $request->total);
-    }
-
-    // Cek apakah jumlah diterima cukup
-    if ($request->diterima < $total_harga) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Jumlah yang diterima tidak cukup untuk membayar total.'
-        ], 400);
-    }
-
-    // Lanjutkan ke update data penjualan jika validasi lulus
-    $penjualan->id_member = $request->id_member;
-    $penjualan->total_item = $request->total_item;
-    $penjualan->total_harga = $total_harga;
-    $penjualan->diskon_persen = $request->diskon_persen ?? 0;
-    $penjualan->diskon_rupiah = $request->diskon_rupiah ?? 0;
-    $penjualan->bayar = $total_harga;
-    $penjualan->diterima = $request->diterima;
-    $penjualan->update();
-
-    // Update detail penjualan dan stok produk
-    foreach ($detail as $item) {
-        if ($request->diskon_rupiah > 0) {
-            $item->diskon_rupiah = $request->diskon_rupiah;
-            $item->diskon_persen = 0;
-        } else {
-            $item->diskon_persen = $request->diskon_persen ?? 0;
+        // Jika tidak ada detail produk, berikan peringatan tanpa simpan
+        if ($detail->isEmpty()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Tidak ada produk yang ditambahkan dalam transaksi.'
+            ], 400);
         }
-        $item->update();
 
-        // Kurangi stok produk
-        $produk = Produk::find($item->id_produk);
-        if ($produk) {
-            $produk->stok -= $item->jumlah;
-            $produk->update();
+        // Hitung total harga setelah diskon (jika ada)
+        $total_harga = $request->total;
+        if ($request->has('diskon_rupiah') && $request->diskon_rupiah > 0) {
+            $total_harga = $request->total - $request->diskon_rupiah;
+        } elseif ($request->has('diskon_persen') && $request->diskon_persen > 0) {
+            $total_harga = $request->total - ($request->diskon_persen / 100 * $request->total);
         }
+
+        // Cek apakah jumlah diterima cukup
+        if ($request->diterima < $total_harga) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Jumlah yang diterima tidak cukup untuk membayar total.'
+            ], 400);
+        }
+
+        // Lanjutkan ke update data penjualan jika validasi lulus
+        $penjualan->id_member = $request->id_member;
+        $penjualan->total_item = $request->total_item;
+        $penjualan->total_harga = $total_harga;
+        $penjualan->diskon_persen = $request->diskon_persen ?? 0;
+        $penjualan->diskon_rupiah = $request->diskon_rupiah ?? 0;
+        $penjualan->bayar = $total_harga;
+        $penjualan->diterima = $request->diterima;
+        $penjualan->update();
+
+        // Update detail penjualan dan stok produk
+        foreach ($detail as $item) {
+            if ($request->diskon_rupiah > 0) {
+                $item->diskon_rupiah = $request->diskon_rupiah;
+                $item->diskon_persen = 0;
+            } else {
+                $item->diskon_persen = $request->diskon_persen ?? 0;
+            }
+            $item->update();
+
+            // Kurangi stok produk
+            $produk = Produk::find($item->id_produk);
+            if ($produk) {
+                $produk->stok -= $item->jumlah;
+                $produk->update();
+            }
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Transaksi berhasil disimpan.',
+            'redirect' => route('transaksi.selesai')
+        ]);
     }
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Transaksi berhasil disimpan.',
-        'redirect' => route('transaksi.selesai')
-    ]);
-}
-
-
-
-
 
 
     public function show($id)

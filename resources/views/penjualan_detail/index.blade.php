@@ -31,10 +31,76 @@ Transaksi Penjualan
 
     #reader {
         margin-top: 20px;
-        width: 300px;
+        width: 400px;
         height: auto;
         border: 1px solid #ccc;
     }
+
+    .table-container {
+        overflow-x: auto;
+        /* Enable horizontal scrolling */
+        width: 100%;
+        /* Pastikan tabel memenuhi lebar kontainer */
+    }
+
+    .table-penjualan {
+        width: 100%;
+        /* Pastikan tabel mengisi kontainer */
+        table-layout: auto;
+        /* Mengatur lebar kolom secara otomatis */
+    }
+
+    .table-penjualan th,
+    .table-penjualan td {
+        white-space: nowrap;
+        /* Mencegah kolom pecah menjadi beberapa baris */
+    }
+
+    .switch {
+    position: relative;
+    display: inline-block;
+    width: 40px; /* Lebar toggle yang lebih kecil */
+    height: 20px; /* Tinggi toggle yang lebih kecil */
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px; /* Sesuaikan agar berbentuk elips */
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px; /* Sesuaikan ukuran tombol */
+    width: 16px;  /* Sesuaikan ukuran tombol */
+    left: 2px;    /* Jarak antara tombol dan sisi kiri slider */
+    bottom: 2px;  /* Jarak antara tombol dan sisi bawah slider */
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #2196F3;
+}
+
+input:checked + .slider:before {
+    transform: translateX(20px); /* Sesuaikan dengan ukuran toggle */
+}
+
 </style>
 @endpush
 
@@ -68,7 +134,7 @@ Transaksi Penjualan
                 </form>
 
                 <!-- Div untuk menampilkan preview kamera -->
-                <div id="reader" style="width: 300px;"></div>
+                <div id="reader" style="width: 335px;"></div>
 
                 <table class="table table-stiped table-bordered table-penjualan">
                     <thead>
@@ -76,9 +142,10 @@ Transaksi Penjualan
                         <th>Kode</th>
                         <th>Nama</th>
                         <th>Harga</th>
+                        <th>Grosir</th>
                         <th width="15%">Jumlah</th>
-                        <th>Diskon %</th>
-                        <th>Diskon Rupiah</th>
+                        <th width="10%">Diskon %</th>
+                        <th width="10%">Diskon Rupiah</th>
                         <th>Subtotal</th>
                         <th width="15%"><i class="fa fa-cog"></i></th>
                     </thead>
@@ -149,7 +216,7 @@ Transaksi Penjualan
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="{{ asset('js/html5-qrcode.min.js') }}"></script>
 
 <script>
     let table, table2;
@@ -177,17 +244,18 @@ Transaksi Penjualan
                     {
                         data: 'harga_jual'
                     },
-                    {
-                        data: 'harga_grosir'
-                    },
+                    { data: 'toggle_harga' },
+                    // {
+                    //     data: 'harga_grosir'
+                    // },
                     {
                         data: 'jumlah'
                     },
                     {
-                        data: 'diskon_persen'
+                        data: 'diskon_persen',
                     },
                     {
-                        data: 'diskon_rupiah'
+                        data: 'diskon_rupiah',
                     },
                     {
                         data: 'subtotal'
@@ -200,54 +268,96 @@ Transaksi Penjualan
                 ],
                 dom: 'Brt',
                 bSort: false,
-                paginate: false
+                paginate: false,
+                scrollX: true, // Enable horizontal scroll
+                responsive: true, // Optional: allows the table to be more responsive
             })
             .on('draw.dt', function() {
                 loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val());
-                setTimeout(() => {
-                    $('#diterima').trigger('input');
-                }, 300);
-            });
-        table2 = $('.table-produk').DataTable();
-
-        $(document).on('input', '.quantity', function() {
-            let id = $(this).data('id');
-            let jumlah = parseInt($(this).val());
-
-            if (jumlah < 1) {
-                $(this).val(1);
-                alert('Jumlah tidak boleh kurang dari 1');
-                return;
-            }
-            if (jumlah > 10000) {
-                $(this).val(10000);
-                alert('Jumlah tidak boleh lebih dari 10000');
-                return;
-            }
-
-            $.post(`{{ url('/transaksi') }}/${id}`, {
-                    '_token': $('[name=csrf-token]').attr('content'),
-                    '_method': 'put',
-                    'jumlah': jumlah
-                })
-                .done(response => {
-                    $(this).on('mouseout', function() {
-                        table.ajax.reload(() => loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val()));
+                        setTimeout(() => {
+                            $('#diterima').trigger('input');
+                        }, 300);
                     });
-                })
-                .fail(errors => {
-                    alert('Tidak dapat menyimpan data');
-                    return;
+                table2 = $('.table-produk').DataTable();
+
+                function updateData(id, jumlah, diskonPersen, diskonRupiah, gunakanHargaGrosir) {
+                    console.log("Mengirim data: ", { id, jumlah, diskonPersen, diskonRupiah, gunakanHargaGrosir });
+
+                    $.post(`{{ url('/transaksi') }}/${id}`, {
+                        '_token': $('[name=csrf-token]').attr('content'),
+                        '_method': 'put',
+                        'jumlah': jumlah,
+                        'diskon_persen': diskonPersen,
+                        'diskon_rupiah': diskonRupiah,
+                        'gunakan_harga_grosir': gunakanHargaGrosir
+                    })
+                    .done(response => {
+                        console.log("Berhasil diperbarui: ", response);
+                        table.ajax.reload(null, false); // Reload tabel tanpa reset paging
+                    })
+                    .fail(errors => {
+                        console.error("Error saat menyimpan data: ", errors);
+                        alert('Tidak dapat menyimpan data');
+                    });
+                }
+
+                $(document).on('input', '.quantity', function() {
+                    let id = $(this).data('id');
+                    let jumlah = parseInt($(this).val());
+                    let diskonPersen = parseFloat($(this).closest('tr').find('.diskon-persen').val()) || 0;
+                    let diskonRupiah = parseFloat($(this).closest('tr').find('.diskon-rupiah').val()) || 0;
+                    let gunakanHargaGrosir = $(this).closest('tr').find('.toggle-harga').is(':checked');
+
+                    updateData(id, jumlah, diskonPersen, diskonRupiah, gunakanHargaGrosir);
                 });
-        });
 
-        $(document).on('input', '#diskon_persen, #diskon_rupiah', function() {
-            if ($(this).val() == "") {
-                $(this).val(0).select();
-            }
+                $(document).on('input', '.diskon-persen', function() {
+                    let id = $(this).data('id');
+                    let diskonPersen = parseFloat($(this).val()) || 0;
 
-            loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val());
-        });
+                    // Jika diskon persen diisi (lebih besar dari 0), disable input diskon rupiah
+                    let diskonRupiahInput = $(this).closest('tr').find('.diskon-rupiah');
+                    if (diskonPersen > 0) {
+                        diskonRupiahInput.val(0).prop('disabled', true); // Reset nilai rupiah dan disable
+                    } else {
+                        diskonRupiahInput.prop('disabled', false); // Aktifkan kembali jika diskon persen kembali 0
+                    }
+
+                    let jumlah = parseInt($(this).closest('tr').find('.quantity').val()) || 1;
+                    let diskonRupiah = 0; // Karena diskon rupiah disabled, pastikan ini 0
+                    let gunakanHargaGrosir = $(this).closest('tr').find('.toggle-harga').is(':checked');
+
+                    updateData(id, jumlah, diskonPersen, diskonRupiah, gunakanHargaGrosir);
+                });
+
+                $(document).on('input', '.diskon-rupiah', function() {
+                    let id = $(this).data('id');
+                    let diskonRupiah = parseFloat($(this).val()) || 0;
+
+                    // Jika diskon rupiah diisi (lebih besar dari 0), disable input diskon persen
+                    let diskonPersenInput = $(this).closest('tr').find('.diskon-persen');
+                    if (diskonRupiah > 0) {
+                        diskonPersenInput.val(0).prop('disabled', true); // Reset nilai persen dan disable
+                    } else {
+                        diskonPersenInput.prop('disabled', false); // Aktifkan kembali jika diskon rupiah kembali 0
+                    }
+
+                    let jumlah = parseInt($(this).closest('tr').find('.quantity').val()) || 1;
+                    let diskonPersen = 0; // Karena diskon persen disabled, pastikan ini 0
+                    let gunakanHargaGrosir = $(this).closest('tr').find('.toggle-harga').is(':checked');
+
+                    updateData(id, jumlah, diskonPersen, diskonRupiah, gunakanHargaGrosir);
+                });
+
+                $(document).on('change', '.toggle-harga', function() {
+                    let id = $(this).data('id');
+                    let gunakanHargaGrosir = $(this).is(':checked'); // Nilai true jika toggle aktif, false jika mati
+                    let jumlah = parseInt($(this).closest('tr').find('.quantity').val()) || 1;
+                    let diskonPersen = parseFloat($(this).closest('tr').find('.diskon-persen').val()) || 0;
+                    let diskonRupiah = parseFloat($(this).closest('tr').find('.diskon-rupiah').val()) || 0;
+
+                    updateData(id, jumlah, diskonPersen, diskonRupiah, gunakanHargaGrosir);
+                });
 
         $('#diterima').on('input', function() {
             if ($(this).val() == "") {
@@ -265,29 +375,29 @@ Transaksi Penjualan
     });
 
     // Fungsi untuk load form dengan pengkondisian diskon persen atau rupiah
-    function loadForm(diskonPersen, diskonRupiah, diterima = 0) {
-        let total = parseFloat($('#total').val());
-        let diskon = 0;
-        console.log("Mengirim nilai diterima:", diterima);
-        // Jika diskon rupiah ada dan lebih besar dari 0, gunakan diskon rupiah
-        if (diskonRupiah > 0) {
-            diskon = diskonRupiah;
-        }
-        // Jika tidak ada diskon rupiah, gunakan diskon persen
-        else if (diskonPersen > 0) {
-            diskon = (diskonPersen / 100) * total;
-        }
+    // function loadForm(diskonPersen, diskonRupiah, diterima = 0) {
+    //     let total = parseFloat($('#total').val());
+    //     let diskon = 0;
+    //     console.log("Mengirim nilai diterima:", diterima);
+    //     // Jika diskon rupiah ada dan lebih besar dari 0, gunakan diskon rupiah
+    //     if (diskonRupiah > 0) {
+    //         diskon = diskonRupiah;
+    //     }
+    //     // Jika tidak ada diskon rupiah, gunakan diskon persen
+    //     else if (diskonPersen > 0) {
+    //         diskon = (diskonPersen / 100) * total;
+    //     }
 
-        let bayar = total - diskon;
+    //     let bayar = total - diskon;
 
-        $('#total_bayar').val(bayar);
-        $('#total_bayar_rupiah').text('Rp. ' + bayar.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'));
+    //     $('#total_bayar').val(bayar);
+    //     $('#total_bayar_rupiah').text('Rp. ' + bayar.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'));
 
-        // Cek apakah jumlah diterima lebih kecil dari total bayar
-        let kembalian = diterima - bayar;
-        $('#kembalian').val(kembalian);
-        $('#kembalian_rupiah').text('Rp. ' + kembalian.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'));
-    }
+    //     // Cek apakah jumlah diterima lebih kecil dari total bayar
+    //     let kembalian = diterima - bayar;
+    //     $('#kembalian').val(kembalian);
+    //     $('#kembalian_rupiah').text('Rp. ' + kembalian.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'));
+    // }
 
 
     function tampilProduk() {
@@ -425,14 +535,42 @@ Transaksi Penjualan
     });
 
     // Fungsi untuk memulai proses scan barcode dari kamera
+    let html5QrCode;
+    let scanning = false; // Flag untuk mengetahui apakah sedang scan atau tidak
+
     function scanBarcode() {
-        const html5QrCode = new Html5Qrcode("reader");
+        // Jika sedang scanning, hentikan dan sembunyikan tampilan scanner
+        if (scanning) {
+            stopScan();
+        } else {
+            startScan();
+        }
+    }
+
+    function startScan() {
+        scanning = true;
+        const readerElement = document.getElementById("reader");
+        readerElement.style.display = "block"; // Tampilkan area pemindaian
+
+        html5QrCode = new Html5Qrcode("reader");
 
         // Mendapatkan kamera yang tersedia
         Html5Qrcode.getCameras().then(devices => {
             if (devices && devices.length) {
-                // Jika ada kamera, pilih kamera pertama
-                let cameraId = devices[0].id;
+                let cameraId = null;
+
+                // Mencari kamera belakang terlebih dahulu
+                for (let i = 0; i < devices.length; i++) {
+                    if (devices[i].facingMode && devices[i].facingMode === "environment") {
+                        cameraId = devices[i].id; // Pilih kamera belakang
+                        break;
+                    }
+                }
+
+                // Jika kamera belakang tidak ditemukan, pilih kamera pertama
+                if (!cameraId) {
+                    cameraId = devices[0].id;
+                }
 
                 // Memulai scanner dengan kamera yang dipilih
                 html5QrCode.start(
@@ -464,7 +602,7 @@ Transaksi Penjualan
                                 });
 
                             // Hentikan scan setelah barcode ditemukan
-                            html5QrCode.stop();
+                            stopScan();
                         },
                         (errorMessage) => {
                             // Jika terjadi error, bisa dihandle disini (optional)
@@ -480,10 +618,20 @@ Transaksi Penjualan
         });
     }
 
+    function stopScan() {
+        // Hentikan scanner dan sembunyikan area pemindaian
+        if (html5QrCode) {
+            html5QrCode.stop(); // Berhenti memindai
+            scanning = false;
+            document.getElementById("reader").style.display = "none"; // Sembunyikan area pemindaian
+        }
+    }
+
+
 
     const submitForm = document.getElementById("form-penjualan")
 
-    submitForm.addEventListener("submit",  (e)=> {
+    submitForm.addEventListener("submit", (e) => {
         e.preventDefault()
         let form = $('#form-penjualan');
         let formData = form.serialize();
@@ -505,7 +653,9 @@ Transaksi Penjualan
                     window.location.href = response.redirect;
 
                 });
-                console.log({response});
+                console.log({
+                    response
+                });
             },
             error: function(xhr) {
                 console.log(xhr);

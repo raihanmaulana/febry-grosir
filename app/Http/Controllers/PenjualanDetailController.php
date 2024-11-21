@@ -23,7 +23,7 @@ class PenjualanDetailController extends Controller
             $penjualan = Penjualan::find($id_penjualan);
             $memberSelected = $penjualan->member ?? new Member();
 
-            return view('penjualan_detail.index', compact('produk', 'member', 'diskon_persen','diskon_rupiah', 'id_penjualan', 'penjualan', 'memberSelected'));
+            return view('penjualan_detail.index', compact('produk', 'member', 'diskon_persen', 'diskon_rupiah', 'id_penjualan', 'penjualan', 'memberSelected'));
         } else {
             if (auth()->user()->level == 1) {
                 return redirect()->route('transaksi.baru');
@@ -36,7 +36,7 @@ class PenjualanDetailController extends Controller
     public function data($id)
     {
         $detail = PenjualanDetail::with('produk')
-        ->where('id_penjualan', $id)
+            ->where('id_penjualan', $id)
             ->get();
 
         $data = array();
@@ -44,15 +44,22 @@ class PenjualanDetailController extends Controller
         $total_item = 0;
 
         foreach ($detail as $item) {
+            $toggleChecked = $item->harga_jual === $item->harga_grosir ? 'checked' : '';
             $row = array();
             $row['kode_produk'] = '<span class="label label-success">' . $item->produk['kode_produk'] . '</span>';
             $row['nama_produk'] = $item->produk['nama_produk'];
             $row['harga_jual']  = 'Rp. ' . format_uang($item->harga_jual);
-            $row['harga_grosir']  = 'Rp. ' . format_uang($item->harga_grosir);
-            $row['jumlah']      = '<input type="number" class="form-control input-sm quantity" data-id="' . $item->id_penjualan_detail . '" value="' . $item->jumlah . '">';
-            $row['diskon_persen'] = $item->diskon_persen . '%';
-            $row['diskon_rupiah'] = 'Rp. ' . format_uang($item->diskon_rupiah);
+            $row['toggle_harga'] = '<label class="switch">
+                                        <input type="checkbox" class="toggle-harga" data-id="' . $item->id_penjualan_detail . '" ' . $toggleChecked . '>
+                                        <span class="slider"></span>
+                                    </label>';
+            $row['jumlah']      = '<input type="number" class="form-control input-sm quantity" data-id="' . $item->id_penjualan_detail . '" value="' . $item->jumlah . '" min="0" max="100">';
+            // Input diskon persen
+            $row['diskon_persen'] = '<input type="number" class="form-control input-sm diskon-persen" data-id="' . $item->id_penjualan_detail . '" value="' . $item->diskon_persen . '" min="0" max="100">';
 
+            // Input diskon rupiah
+            $row['diskon_rupiah'] = '<input type="number" class="form-control input-sm diskon-rupiah" data-id="' . $item->id_penjualan_detail . '" value="' . $item->diskon_rupiah . '" min="0">';
+            $row['harga_yang_digunakan'] = $item->harga_jual == $item->harga_grosir ? 'Grosir' : 'Jual';
             $subtotal = $item->harga_jual * $item->jumlah;
             if ($item->diskon_persen > 0) {
                 $subtotal -= ($item->diskon_persen / 100) * $subtotal;
@@ -80,6 +87,7 @@ class PenjualanDetailController extends Controller
             'jumlah'      => '',
             'diskon_persen' => '',
             'diskon_rupiah' => '',
+            'toggle_harga' => '',
             'subtotal'    => '',
             'aksi'        => '',
         ];
@@ -88,7 +96,7 @@ class PenjualanDetailController extends Controller
         return datatables()
             ->of($data)
             ->addIndexColumn()
-            ->rawColumns(['aksi', 'kode_produk', 'jumlah'])
+            ->rawColumns(['aksi', 'kode_produk', 'jumlah', 'diskon_persen', 'diskon_rupiah', 'toggle_harga'])
             ->make(true);
     }
 
@@ -96,32 +104,97 @@ class PenjualanDetailController extends Controller
 
     public function store(Request $request)
     {
+        $request->validate([
+            'id_penjualan' => 'required|exists:penjualan,id_penjualan',
+            'id_produk' => 'required|exists:produk,id_produk',
+        ]);
+
         $produk = Produk::where('id_produk', $request->id_produk)->first();
-        if (! $produk) {
-            return response()->json('Data gagal disimpan', 400);
+
+        if (!$produk) {
+            return response()->json('Produk tidak ditemukan', 404);
         }
 
         $detail = new PenjualanDetail();
         $detail->id_penjualan = $request->id_penjualan;
         $detail->id_produk = $produk->id_produk;
         $detail->harga_jual = $produk->harga_jual;
+        $detail->harga_jual_asli = $produk->harga_jual;
         $detail->harga_grosir = $produk->harga_grosir;
-        $detail->jumlah = 1;
-        $detail->diskon_persen = $produk->diskon_persen;
-        $detail->diskon_rupiah = $produk->diskon_rupiah;
-        $detail->subtotal = $produk->harga_jual;
+        $detail->jumlah = 1; // Default jumlah 1
+        $detail->diskon_persen = $request->diskon_persen ?? 0; // Input manual diskon persen
+        $detail->diskon_rupiah = $request->diskon_rupiah ?? 0; // Input manual diskon rupiah
+
+        // Hitung subtotal
+        $subtotal = $produk->harga_jual;
+        if ($request->diskon_persen > 0) {
+            $subtotal -= ($request->diskon_persen / 100) * $subtotal;
+        } elseif ($request->diskon_rupiah > 0) {
+            $subtotal -= $request->diskon_rupiah;
+        }
+
+        $detail->subtotal = $subtotal;
         $detail->save();
-        
+
         return response()->json('Data berhasil disimpan', 200);
     }
+
 
     public function update(Request $request, $id)
     {
         $detail = PenjualanDetail::find($id);
-        $detail->jumlah = $request->jumlah;
-        $detail->subtotal = $detail->harga_jual * $request->jumlah;
+
+        if (!$detail) {
+            return response()->json(['message' => 'Data tidak ditemukan'], 404);
+        }
+
+        $jumlah = $request->jumlah ?? $detail->jumlah;
+        $diskonPersen = $request->diskon_persen ?? $detail->diskon_persen;
+        $diskonRupiah = $request->diskon_rupiah ?? $detail->diskon_rupiah;
+        $gunakanHargaGrosir = filter_var($request->gunakan_harga_grosir, FILTER_VALIDATE_BOOLEAN);
+
+        // Tentukan harga berdasarkan toggle
+        if ($gunakanHargaGrosir) {
+            $hargaAwal = $detail->harga_grosir;
+        } else {
+            $hargaAwal = $detail->harga_jual_asli; // Kembalikan ke harga asli
+        }
+
+        // Validasi data harga
+        if (!$hargaAwal) {
+            return response()->json(['message' => 'Data harga tidak valid'], 400);
+        }
+
+        // Hitung subtotal berdasarkan diskon
+        $subtotal = $hargaAwal * $jumlah;
+
+        if ($diskonPersen > 0) {
+            $diskon = ($diskonPersen / 100) * $subtotal;
+        } elseif ($diskonRupiah > 0) {
+            $diskon = $diskonRupiah * $jumlah;
+        } else {
+            $diskon = 0;
+        }
+
+        $subtotal -= $diskon;
+
+        // Simpan perubahan
+        $detail->jumlah = $jumlah;
+        $detail->diskon_persen = $diskonPersen;
+        $detail->diskon_rupiah = $diskonRupiah;
+        $detail->subtotal = $subtotal;
+        $detail->harga_jual = $hargaAwal; // Perbarui harga saat ini
         $detail->update();
+
+        return response()->json([
+            'message' => 'Data berhasil diperbarui',
+            'subtotal' => $subtotal,
+            'harga_digunakan' => $gunakanHargaGrosir ? 'Harga Grosir' : 'Harga Jual'
+        ], 200);
     }
+
+
+
 
     public function destroy($id)
     {
@@ -165,5 +238,4 @@ class PenjualanDetailController extends Controller
 
         return response()->json(['message' => 'Produk tidak ditemukan.'], 404);
     }
-
 }

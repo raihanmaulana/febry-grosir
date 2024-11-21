@@ -18,6 +18,9 @@
                     <button onclick="addForm('{{ route('produk.store') }}')" class="btn btn-success btn-xs btn-flat"><i class="fa fa-plus-circle"></i> Tambah</button>
                     <button onclick="deleteSelected('{{ route('produk.delete_selected') }}')" class="btn btn-danger btn-xs btn-flat"><i class="fa fa-trash"></i> Hapus</button>
                     <button onclick="cetakBarcode('{{ route('produk.cetak_barcode') }}')" class="btn btn-info btn-xs btn-flat"><i class="fa fa-barcode"></i> Cetak Barcode</button>
+                    <a href="{{ route('produk.exportExcel') }}" class="btn btn-warning btn-xs btn-flat">
+                    <i class="fa fa-file-pdf-o"></i> Export Excel
+                    </a>
                 </div>
             </div>
             <div class="box-body table-responsive">
@@ -36,8 +39,8 @@
                             <th>Harga Beli</th>
                             <th>Harga Jual</th>
                             <th>Harga Grosir</th>
-                            <th>Diskon %</th>
-                            <th>Diskon Rupiah</th>
+                            <!-- <th>Diskon %</th>
+                            <th>Diskon Rupiah</th> -->
                             <th>Stok</th>
                             <th width="15%"><i class="fa fa-cog"></i></th>
                         </thead>
@@ -72,8 +75,6 @@
                 {data: 'harga_beli'},
                 {data: 'harga_jual'},
                 {data: 'harga_grosir'},
-                {data: 'diskon_persen'},
-                {data: 'diskon_rupiah'},
                 {data: 'stok'},
                 {data: 'aksi', searchable: false, sortable: false},
             ]
@@ -125,8 +126,8 @@
                 $('#modal-form [name=harga_beli]').val(response.harga_beli);
                 $('#modal-form [name=harga_jual]').val(response.harga_jual);
                 $('#modal-form [name=harga_grosir]').val(response.harga_grosir);
-                $('#modal-form [name=diskon_persen]').val(response.diskon_persen);
-                $('#modal-form [name=diskon_rupiah]').val(response.diskon_rupiah);
+                // $('#modal-form [name=diskon_persen]').val(response.diskon_persen);
+                // $('#modal-form [name=diskon_rupiah]').val(response.diskon_rupiah);
                 $('#modal-form [name=stok]').val(response.stok);
             })
             .fail((errors) => {

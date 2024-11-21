@@ -1,19 +1,31 @@
 @extends('layouts.master')
 
 @section('title')
-    Daftar Penjualan
+Daftar Penjualan
 @endsection
 
 @section('breadcrumb')
-    @parent
-    <li class="active">Daftar Penjualan</li>
+@parent
+<li class="active">Daftar Penjualan</li>
 @endsection
 
 @section('content')
 <div class="row">
     <div class="col-lg-12">
         <div class="box">
+            <div class="box-header with-border">
+                <div class="btn-group">
+                    <a href="{{ route('penjualan.exportPdf') }}" class="btn btn-success btn-xs btn-flat" style="margin-right: 5px;">
+                    <i class="fa fa-file-pdf-o"></i> Export PDF
+                    </a>
+                    <a href="{{ route('penjualan.exportExcel') }}" class="btn btn-warning btn-xs btn-flat">
+                    <i class="fa fa-file-pdf-o"></i> Export Excel
+                    </a>
+                </div>
+            </div>
             <div class="box-body table-responsive">
+
+
                 <table class="table table-stiped table-bordered table-penjualan">
                     <thead>
                         <th width="5%">No</th>
@@ -40,24 +52,45 @@
 <script>
     let table, table1;
 
-    $(function () {
+    $(function() {
         table = $('.table-penjualan').DataTable({
             processing: true,
             autoWidth: false,
             ajax: {
                 url: "{{ route('penjualan.data') }}",
             },
-            columns: [
-                {data: 'DT_RowIndex', searchable: false, sortable: false},
-                {data: 'tanggal'},
+            columns: [{
+                    data: 'DT_RowIndex',
+                    searchable: false,
+                    sortable: false
+                },
+                {
+                    data: 'tanggal'
+                },
                 // {data: 'kode_member'},
-                {data: 'total_item'},
-                {data: 'total_harga'},
-                {data: 'diskon_persen'},
-                {data: 'diskon_rupiah'},
-                {data: 'bayar'},
-                {data: 'kasir'},
-                {data: 'aksi', searchable: false, sortable: false},
+                {
+                    data: 'total_item'
+                },
+                {
+                    data: 'total_harga'
+                },
+                {
+                    data: 'diskon_persen'
+                },
+                {
+                    data: 'diskon_rupiah'
+                },
+                {
+                    data: 'bayar'
+                },
+                {
+                    data: 'kasir'
+                },
+                {
+                    data: 'aksi',
+                    searchable: false,
+                    sortable: false
+                },
             ]
         });
 
@@ -65,13 +98,26 @@
             processing: true,
             bSort: false,
             dom: 'Brt',
-            columns: [
-                {data: 'DT_RowIndex', searchable: false, sortable: false},
-                {data: 'kode_produk'},
-                {data: 'nama_produk'},
-                {data: 'harga_jual'},
-                {data: 'jumlah'},
-                {data: 'subtotal'},
+            columns: [{
+                    data: 'DT_RowIndex',
+                    searchable: false,
+                    sortable: false
+                },
+                {
+                    data: 'kode_produk'
+                },
+                {
+                    data: 'nama_produk'
+                },
+                {
+                    data: 'harga_jual'
+                },
+                {
+                    data: 'jumlah'
+                },
+                {
+                    data: 'subtotal'
+                },
             ]
         })
     });

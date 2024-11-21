@@ -16,6 +16,7 @@
         "laravel/jetstream": "*",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
+        "maatwebsite/excel": "^3.1",
         "milon/barcode": "*",
         "yajra/laravel-datatables-oracle": "*"
     },

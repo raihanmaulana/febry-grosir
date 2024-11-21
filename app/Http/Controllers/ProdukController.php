@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Produk;
 use App\Models\Kategori;
 use Illuminate\Http\Request;
-use App\Models\Produk;
-use PDF;
+use App\Exports\ProdukExportExcel;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class ProdukController extends Controller
 {
@@ -23,21 +25,22 @@ class ProdukController extends Controller
 
     public function data()
     {
+
         $produk = Produk::leftJoin('kategori', 'kategori.id_kategori', 'produk.id_kategori')
             ->select('produk.*', 'nama_kategori')
             ->orderBy('kode_produk', 'asc')
             ->get();
-
+        \Log::info($produk);
         return datatables()
             ->of($produk)
             ->addIndexColumn()
             ->addColumn('select_all', function ($produk) {
                 return '
-                    <input type="checkbox" name="id_produk[]" value="'. $produk->id_produk .'">
+                    <input type="checkbox" name="id_produk[]" value="' . $produk->id_produk . '">
                 ';
             })
             ->addColumn('kode_produk', function ($produk) {
-                return '<span class="label label-success">'. $produk->kode_produk .'</span>';
+                return '<span class="label label-success">' . $produk->kode_produk . '</span>';
             })
             ->addColumn('harga_beli', function ($produk) {
                 return format_uang($produk->harga_beli);
@@ -54,8 +57,8 @@ class ProdukController extends Controller
             ->addColumn('aksi', function ($produk) {
                 return '
                 <div class="btn-group">
-                    <button type="button" onclick="editForm(`'. route('produk.update', $produk->id_produk) .'`)" class="btn btn-xs btn-info btn-flat"><i class="fa fa-pencil"></i></button>
-                    <button type="button" onclick="deleteData(`'. route('produk.destroy', $produk->id_produk) .'`)" class="btn btn-xs btn-danger btn-flat"><i class="fa fa-trash"></i></button>
+                    <button type="button" onclick="editForm(`' . route('produk.update', $produk->id_produk) . '`)" class="btn btn-xs btn-info btn-flat"><i class="fa fa-pencil"></i></button>
+                    <button type="button" onclick="deleteData(`' . route('produk.destroy', $produk->id_produk) . '`)" class="btn btn-xs btn-danger btn-flat"><i class="fa fa-trash"></i></button>
                 </div>
                 ';
             })
@@ -82,7 +85,7 @@ class ProdukController extends Controller
     public function store(Request $request)
     {
         $produk = Produk::latest()->first() ?? new Produk();
-        $request['kode_produk'] = 'P'. tambah_nol_didepan((int)$produk->id_produk +1, 6);
+        $request['kode_produk'] = 'P' . tambah_nol_didepan((int)$produk->id_produk + 1, 6);
 
         $produk = Produk::create($request->all());
 
@@ -164,5 +167,41 @@ class ProdukController extends Controller
         $pdf = PDF::loadView('produk.barcode', compact('dataproduk', 'no'));
         $pdf->setPaper('a4', 'potrait');
         return $pdf->stream('produk.pdf');
+    }
+
+    public function exportProdukPdf()
+    {
+        // Ambil data produk dengan relasi kategori
+        $produk = Produk::with('kategori')->orderBy('id_produk', 'desc')->get();
+
+
+        // Mapping data produk
+        $data = $produk->map(function ($produk) {
+            // Ambil informasi produk
+            return [
+                'kode_produk' => $produk->kode_produk,
+                'nama_produk' => $produk->nama_produk,
+                'nama_kategori' => $produk->kategori->nama_kategori ?? 'Tidak Diketahui',
+                'merk' => $produk->merk,
+                'harga_beli' => format_uang($produk->harga_beli),
+                'harga_jual' => format_uang($produk->harga_jual),
+                'harga_grosir' => format_uang($produk->harga_grosir),
+                'stok' => $produk->stok,
+            ];
+        });
+
+        // Load view untuk PDF
+        $pdf = PDF::loadView('produk.export_pdf', [
+            'data' => $data,
+        ]);
+
+        // Download PDF
+        return $pdf->download('laporan_produk.pdf');
+    }
+
+    public function exportExcel()
+    {
+        \Log::info('Export Produk Excel Dipanggil');  // Menambahkan log untuk memastikan rute terpanggil
+        return Excel::download(new ProdukExportExcel, 'laporan_produk.xlsx');
     }
 }

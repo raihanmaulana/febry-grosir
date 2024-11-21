@@ -163,7 +163,8 @@ input:checked + .slider:before {
                             <input type="hidden" name="total" id="total">
                             <input type="hidden" name="total_item" id="total_item">
                             <input type="hidden" name="bayar" id="bayar">
-                            <input type="hidden" name="id_member" id="id_member" value="{{ $memberSelected->id_member }}">
+                            <input type="number" name="diskon_persen" value="{{ old('diskon_persen', $penjualan->diskon_persen ?? '') }}" hidden>
+
 
                             <div class="form-group row">
                                 <label for="totalrp" class="col-lg-2 control-label">Total</label>
@@ -534,10 +535,9 @@ input:checked + .slider:before {
         loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val(), $(this).val());
     });
 
-    // Fungsi untuk memulai proses scan barcode dari kamera
     let html5QrCode;
     let scanning = false; // Flag untuk mengetahui apakah sedang scan atau tidak
-
+    
     function scanBarcode() {
         // Jika sedang scanning, hentikan dan sembunyikan tampilan scanner
         if (scanning) {
@@ -546,78 +546,58 @@ input:checked + .slider:before {
             startScan();
         }
     }
-
+    
     function startScan() {
         scanning = true;
         const readerElement = document.getElementById("reader");
         readerElement.style.display = "block"; // Tampilkan area pemindaian
-
+    
         html5QrCode = new Html5Qrcode("reader");
-
-        // Mendapatkan kamera yang tersedia
-        Html5Qrcode.getCameras().then(devices => {
-            if (devices && devices.length) {
-                let cameraId = null;
-
-                // Mencari kamera belakang terlebih dahulu
-                for (let i = 0; i < devices.length; i++) {
-                    if (devices[i].facingMode && devices[i].facingMode === "environment") {
-                        cameraId = devices[i].id; // Pilih kamera belakang
-                        break;
-                    }
-                }
-
-                // Jika kamera belakang tidak ditemukan, pilih kamera pertama
-                if (!cameraId) {
-                    cameraId = devices[0].id;
-                }
-
-                // Memulai scanner dengan kamera yang dipilih
-                html5QrCode.start(
-                        cameraId, {
-                            fps: 10, // Frame per detik
-                            qrbox: {
-                                width: 250,
-                                height: 250
-                            } // Ukuran area scan
-                        },
-                        (decodedText, decodedResult) => {
-                            // Jika kode barcode berhasil di-scan
-                            $('#kode_produk').val(decodedText); // Isi input kode_produk dengan hasil scan
-
-                            // Kirim permintaan ke server untuk mendapatkan data produk
-                            $.get(`{{ url('/transaksi/get-product-by-code') }}`, {
-                                    kode_produk: decodedText // Menggunakan kode produk yang di-scan
-                                })
-                                .done(response => {
-                                    // Jika produk ditemukan, masukkan ID produk dan panggil tambahProduk
-                                    $('#id_produk').val(response.id_produk); // Set ID produk
-                                    $('#kode_produk').val(response.kode_produk); // Set kode produk
-
-                                    // Memanggil fungsi tambahProduk setelah produk ditemukan
-                                    tambahProduk();
-                                })
-                                .fail(error => {
-                                    alert('Kode produk tidak ditemukan. Silakan periksa kembali kode produk.');
-                                });
-
-                            // Hentikan scan setelah barcode ditemukan
-                            stopScan();
-                        },
-                        (errorMessage) => {
-                            // Jika terjadi error, bisa dihandle disini (optional)
-                            console.log(`Scanning error: ${errorMessage}`);
+    
+        // Paksa menggunakan kamera belakang dengan facingMode "environment"
+        const cameraConfig = { facingMode: "environment" };
+    
+        html5QrCode
+            .start(
+                cameraConfig, 
+                {
+                    fps: 10, // Frame per detik
+                    qrbox: { width: 250, height: 250 } // Ukuran area scan
+                },
+                (decodedText, decodedResult) => {
+                    // Jika kode barcode berhasil di-scan
+                    $('#kode_produk').val(decodedText); // Isi input kode_produk dengan hasil scan
+    
+                    // Kirim permintaan ke server untuk mendapatkan data produk
+                    $.get(`{{ url('/transaksi/get-product-by-code') }}`, {
+                            kode_produk: decodedText // Menggunakan kode produk yang di-scan
                         })
-                    .catch(err => {
-                        // Handle error jika kamera tidak bisa digunakan
-                        console.log(`Camera error: ${err}`);
-                    });
-            }
-        }).catch(err => {
-            console.log(`Error mendapatkan kamera: ${err}`);
-        });
+                        .done(response => {
+                            // Jika produk ditemukan, masukkan ID produk dan panggil tambahProduk
+                            $('#id_produk').val(response.id_produk); // Set ID produk
+                            $('#kode_produk').val(response.kode_produk); // Set kode produk
+    
+                            // Memanggil fungsi tambahProduk setelah produk ditemukan
+                            tambahProduk();
+                        })
+                        .fail(error => {
+                            alert('Kode produk tidak ditemukan. Silakan periksa kembali kode produk.');
+                        });
+    
+                    // Hentikan scan setelah barcode ditemukan
+                    stopScan();
+                },
+                (errorMessage) => {
+                    // Jika terjadi error, bisa dihandle disini (optional)
+                    console.log(`Scanning error: ${errorMessage}`);
+                }
+            )
+            .catch(err => {
+                // Handle error jika kamera tidak bisa digunakan
+                console.log(`Camera error: ${err}`);
+            });
     }
-
+    
     function stopScan() {
         // Hentikan scanner dan sembunyikan area pemindaian
         if (html5QrCode) {
@@ -626,9 +606,7 @@ input:checked + .slider:before {
             document.getElementById("reader").style.display = "none"; // Sembunyikan area pemindaian
         }
     }
-
-
-
+    
     const submitForm = document.getElementById("form-penjualan")
 
     submitForm.addEventListener("submit", (e) => {

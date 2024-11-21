@@ -46,10 +46,15 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/produk/delete-selected', [ProdukController::class, 'deleteSelected'])->name('produk.delete_selected');
         Route::post('/produk/cetak-barcode', [ProdukController::class, 'cetakBarcode'])->name('produk.cetak_barcode');
         Route::resource('/produk', ProdukController::class);
+        // Route::get('produk/export-pdf', function () {
+        //     \Log::info('Route exportPdf terpanggil');
+        //     return app(ProdukController::class)->exportProdukPdf();
+        // })->name('produk.exportPdf');
+        Route::get('/produk/export-excel', [ProdukController::class, 'exportProdukExcel'])->name('produk.exportExcel');
 
         Route::get('/member/data', [MemberController::class, 'data'])->name('member.data');
         Route::post('/member/cetak-member', [MemberController::class, 'cetakMember'])->name('member.cetak_member');
-        Route::resource('/member', MemberController::class);
+        // Route::resource('/member', MemberController::class);
 
         Route::get('/supplier/data', [SupplierController::class, 'data'])->name('supplier.data');
         Route::resource('/supplier', SupplierController::class);
@@ -69,8 +74,14 @@ Route::group(['middleware' => 'auth'], function () {
 
         Route::get('/penjualan/data', [PenjualanController::class, 'data'])->name('penjualan.data');
         Route::get('/penjualan', [PenjualanController::class, 'index'])->name('penjualan.index');
+        Route::get('penjualan/export-pdf', function () {
+            \Log::info('Route exportPdf terpanggil');
+            return app(PenjualanController::class)->exportPdf();
+        })->name('penjualan.exportPdf');
+        Route::get('/penjualan/export-excel', [PenjualanController::class, 'exportExcel'])->name('penjualan.exportExcel');
         Route::get('/penjualan/{id}', [PenjualanController::class, 'show'])->name('penjualan.show');
         Route::delete('/penjualan/{id}', [PenjualanController::class, 'destroy'])->name('penjualan.destroy');
+
 
         Route::get('/gudang/data', [GudangController::class, 'data'])->name('gudang.data');
         Route::resource('/gudang', GudangController::class);

@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Penjualan;
-use App\Models\PenjualanDetail;
 use App\Models\Produk;
 use App\Models\Setting;
+use App\Models\Penjualan;
 use Illuminate\Http\Request;
+use App\Models\PenjualanDetail;
+use App\Exports\PenjualanExport;
+use App\Exports\PenjualanExportExcel;
+use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class PenjualanController extends Controller
@@ -18,8 +21,8 @@ class PenjualanController extends Controller
 
     public function data()
     {
-        $penjualan = Penjualan::with('member')->orderBy('id_penjualan', 'desc')->get();
-
+        $penjualan = Penjualan::orderBy('id_penjualan', 'desc')->get();
+        // \Log::info($penjualan);
         return datatables()
             ->of($penjualan)
             ->addIndexColumn()
@@ -34,10 +37,6 @@ class PenjualanController extends Controller
             })
             ->addColumn('tanggal', function ($penjualan) {
                 return tanggal_indonesia($penjualan->created_at, false);
-            })
-            ->addColumn('kode_member', function ($penjualan) {
-                $member = $penjualan->member->kode_member ?? '';
-                return '<span class="label label-success">' . $member . '</spa>';
             })
             ->editColumn('diskon_persen', function ($penjualan) {
                 return $penjualan->diskon_persen . '%';
@@ -56,14 +55,14 @@ class PenjualanController extends Controller
                 </div>
                 ';
             })
-            ->rawColumns(['aksi', 'kode_member'])
+            ->rawColumns(['aksi'])
             ->make(true);
     }
 
     public function create()
     {
         $penjualan = new Penjualan();
-        $penjualan->id_member = null;
+        // $penjualan->id_member = null;
         $penjualan->total_item = 0;
         $penjualan->total_harga = 0;
         $penjualan->diskon_persen = 0;
@@ -79,6 +78,7 @@ class PenjualanController extends Controller
 
     public function store(Request $request)
     {
+        \Log::info($request->all());
         // Temukan transaksi penjualan berdasarkan ID
         $penjualan = Penjualan::findOrFail($request->id_penjualan);
 
@@ -113,20 +113,31 @@ class PenjualanController extends Controller
         $penjualan->id_member = $request->id_member;
         $penjualan->total_item = $request->total_item;
         $penjualan->total_harga = $total_harga;
-        $penjualan->diskon_persen = $request->diskon_persen ?? 0;
-        $penjualan->diskon_rupiah = $request->diskon_rupiah ?? 0;
         $penjualan->bayar = $total_harga;
         $penjualan->diterima = $request->diterima;
         $penjualan->update();
 
         // Update detail penjualan dan stok produk
         foreach ($detail as $item) {
-            if ($request->diskon_rupiah > 0) {
-                $item->diskon_rupiah = $request->diskon_rupiah;
-                $item->diskon_persen = 0;
-            } else {
-                $item->diskon_persen = $request->diskon_persen ?? 0;
+            // Ambil harga awal dari harga jual atau grosir
+            $hargaAwal = $item->harga_jual;
+
+            // Tentukan diskon yang diterapkan
+            $diskonPersen = $item->diskon_persen;
+            $diskonRupiah = $item->diskon_rupiah;
+
+            // Hitung subtotal berdasarkan diskon
+            $subtotal = $hargaAwal * $item->jumlah;
+            if ($diskonPersen > 0) {
+                $subtotal -= ($diskonPersen / 100) * $subtotal;
+            } elseif ($diskonRupiah > 0) {
+                $subtotal -= $diskonRupiah * $item->jumlah;
             }
+
+            // Perbarui data detail
+            $item->diskon_persen = $diskonPersen;
+            $item->diskon_rupiah = $diskonRupiah;
+            $item->subtotal = $subtotal;
             $item->update();
 
             // Kurangi stok produk
@@ -136,6 +147,7 @@ class PenjualanController extends Controller
                 $produk->update();
             }
         }
+
 
         return response()->json([
             'status' => 'success',
@@ -228,5 +240,56 @@ class PenjualanController extends Controller
         $pdf = PDF::loadView('penjualan.nota_besar', compact('setting', 'penjualan', 'detail'));
         $pdf->setPaper(0, 0, 609, 440, 'potrait');
         return $pdf->stream('Transaksi-' . date('Y-m-d-his') . '.pdf');
+    }
+
+    public function exportPdf()
+    {
+        // Ambil data penjualan dengan relasi penjualan_detail dan produk
+        $penjualan = Penjualan::with(['user', 'penjualanDetail.produk'])->orderBy('id_penjualan', 'desc')->get();
+
+        // Ambil data setting untuk logo
+        $setting = Setting::first();
+
+        // Mapping data penjualan
+        $data = $penjualan->map(function ($penjualan) {
+            // Ambil nama produk dan jumlah dari penjualan_detail
+            $nama_barang = $penjualan->penjualanDetail->map(function ($detail) {
+                $nama_produk = $detail->produk->nama_produk ?? 'Tidak Diketahui';
+                $jumlah = $detail->jumlah; // Ambil jumlah barang yang dibeli
+                return "{$nama_produk} ({$jumlah})"; // Format Nama Barang (Jumlah)
+            })->implode(', '); // Gabungkan dengan koma
+
+            // Hitung diskon total dari penjualan_detail
+            $diskon_persen_total = $penjualan->penjualanDetail->sum('diskon_persen');
+            $diskon_rupiah_total = $penjualan->penjualanDetail->sum(function ($detail) {
+                return $detail->diskon_rupiah * $detail->jumlah; // Diskon rupiah * jumlah barang
+            });
+
+            return [
+                'id' => $penjualan->id_penjualan,
+                'tanggal' => tanggal_indonesia($penjualan->created_at, false),
+                'total_item' => format_uang($penjualan->total_item),
+                'total_harga' => format_uang($penjualan->total_harga),
+                'diskon_persen' => $diskon_persen_total . '%', // Diskon persen dari penjualan_detail
+                'diskon_rupiah' => format_uang($diskon_rupiah_total), // Diskon rupiah dari penjualan_detail
+                'bayar' => format_uang($penjualan->bayar),
+                'kasir' => $penjualan->user->name ?? '-',
+                'nama_barang' => $nama_barang, // Nama barang dengan jumlah
+            ];
+        });
+
+        // Load view untuk PDF
+        $pdf = PDF::loadView('penjualan.export_pdf', [
+            'data' => $data,
+            'setting' => $setting
+        ]);
+
+        // Download PDF
+        return $pdf->download('laporan_penjualan.pdf');
+    }
+
+    public function exportExcel()
+    {
+        return Excel::download(new PenjualanExportExcel, 'laporan_penjualan.xlsx');
     }
 }

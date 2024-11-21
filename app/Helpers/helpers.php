@@ -5,6 +5,12 @@ function format_uang($angka)
     return number_format($angka, 0, ',', '.');
 }
 
+function format_uang_excel($angka)
+{
+    return number_format($angka, 2, ',', '.'); // 2 decimal places, comma for decimal, dot for thousand separator
+}
+
+
 function terbilang($angka)
 {
     $angka = abs($angka);
@@ -32,7 +38,7 @@ function terbilang($angka)
     return $terbilang;
 }
 
-function tanggal_indonesia($tgl, $tampil_hari = true)
+function tanggal_indonesia($tgl, $tampil_hari = true, $tampil_waktu = true)
 {
     $nama_hari  = array(
         'Minggu',
@@ -72,8 +78,16 @@ function tanggal_indonesia($tgl, $tampil_hari = true)
         $text       .= "$tanggal $bulan $tahun";
     }
 
+    if ($tampil_waktu && strlen($tgl) > 10) {
+        $jam   = substr($tgl, 11, 2);
+        $menit = substr($tgl, 14, 2);
+        $detik = substr($tgl, 17, 2);
+        $text .= " $jam:$menit:$detik";
+    }
+
     return $text;
 }
+
 
 function tambah_nol_didepan($value, $threshold = null)
 {

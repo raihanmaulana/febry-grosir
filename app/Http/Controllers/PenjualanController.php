@@ -22,7 +22,6 @@ class PenjualanController extends Controller
     public function data()
     {
         $penjualan = Penjualan::orderBy('id_penjualan', 'desc')->get();
-        // \Log::info($penjualan);
         return datatables()
             ->of($penjualan)
             ->addIndexColumn()
@@ -78,7 +77,6 @@ class PenjualanController extends Controller
 
     public function store(Request $request)
     {
-        \Log::info($request->all());
         // Temukan transaksi penjualan berdasarkan ID
         $penjualan = Penjualan::findOrFail($request->id_penjualan);
 

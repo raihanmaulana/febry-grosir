@@ -17,6 +17,7 @@ use App\Http\Controllers\{
     GudangController
 };
 use Illuminate\Support\Facades\Route;
+use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 /*
 |--------------------------------------------------------------------------
@@ -46,12 +47,10 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/produk/delete-selected', [ProdukController::class, 'deleteSelected'])->name('produk.delete_selected');
         Route::post('/produk/cetak-barcode', [ProdukController::class, 'cetakBarcode'])->name('produk.cetak_barcode');
         Route::resource('/produk', ProdukController::class);
-        // Route::get('produk/export-pdf', function () {
-        //     \Log::info('Route exportPdf terpanggil');
-        //     return app(ProdukController::class)->exportProdukPdf();
-        // })->name('produk.exportPdf');
-        Route::get('/produk/export-excel', [ProdukController::class, 'exportProdukExcel'])->name('produk.exportExcel');
-
+        Route::get('produks/export-excel', function () {
+            return app(ProdukController::class)->exportExcel();
+        })->name('produk.exportExcel');
+        
         Route::get('/member/data', [MemberController::class, 'data'])->name('member.data');
         Route::post('/member/cetak-member', [MemberController::class, 'cetakMember'])->name('member.cetak_member');
         // Route::resource('/member', MemberController::class);
@@ -75,7 +74,6 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/penjualan/data', [PenjualanController::class, 'data'])->name('penjualan.data');
         Route::get('/penjualan', [PenjualanController::class, 'index'])->name('penjualan.index');
         Route::get('penjualan/export-pdf', function () {
-            \Log::info('Route exportPdf terpanggil');
             return app(PenjualanController::class)->exportPdf();
         })->name('penjualan.exportPdf');
         Route::get('/penjualan/export-excel', [PenjualanController::class, 'exportExcel'])->name('penjualan.exportExcel');
@@ -101,6 +99,10 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/transaksi/loadform/{diskon}/{total}/{diterima}', [PenjualanDetailController::class, 'loadForm'])->name('transaksi.load_form');
         Route::resource('/transaksi', PenjualanDetailController::class)
             ->except('create', 'show', 'edit');
+            
+        Route::post('/produk/kasir', [DashboardController::class, 'store'])->name('produk.kasir.store');
+        Route::get('/produk/kasir/data', [DashboardController::class, 'dataKasir'])->name('produk.kasir.data');
+
     });
 
     Route::group(['middleware' => 'level:1'], function () {

@@ -30,7 +30,6 @@ class ProdukController extends Controller
             ->select('produk.*', 'nama_kategori')
             ->orderBy('kode_produk', 'asc')
             ->get();
-        \Log::info($produk);
         return datatables()
             ->of($produk)
             ->addIndexColumn()
@@ -201,7 +200,6 @@ class ProdukController extends Controller
 
     public function exportExcel()
     {
-        \Log::info('Export Produk Excel Dipanggil');  // Menambahkan log untuk memastikan rute terpanggil
         return Excel::download(new ProdukExportExcel, 'laporan_produk.xlsx');
     }
 }

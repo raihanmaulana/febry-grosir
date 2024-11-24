@@ -41,34 +41,18 @@
             <a href="{{ route('produk.index') }}" class="small-box-footer">Lihat <i class="fa fa-arrow-circle-right"></i></a>
         </div>
     </div>
-    <!-- ./col -->
-    <!-- <div class="col-lg-3 col-xs-6">
-        
-        <div class="small-box bg-yellow">
-            <div class="inner">
-                <h3>{{ $member }}</h3>
-
-                <p>Total Member</p>
-            </div>
-            <div class="icon">
-                <i class="fa fa-id-card"></i>
-            </div>
-            <a href="{{ route('member.index') }}" class="small-box-footer">Lihat <i class="fa fa-arrow-circle-right"></i></a>
-        </div>
-    </div> -->
-    <!-- ./col -->
     <div class="col-lg-3 col-xs-6">
         <!-- small box -->
         <div class="small-box bg-red">
             <div class="inner">
                 <h3>{{ $supplier }}</h3>
 
-                <p>Total Gudang</p>
+                <p>Penjualan</p>
             </div>
             <div class="icon">
-                <i class="fa fa-warehouse"></i>
+                <i class="fa fa-dollar-sign"></i>
             </div>
-            <a href="{{ route('gudang.index') }}" class="small-box-footer">Lihat <i class="fa fa-arrow-circle-right"></i></a>
+            <a href="{{ route('penjualan.index') }}" class="small-box-footer">Lihat <i class="fa fa-arrow-circle-right"></i></a>
         </div>
     </div>
     <!-- ./col -->

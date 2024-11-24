@@ -7,7 +7,7 @@ function format_uang($angka)
 
 function format_uang_excel($angka)
 {
-    return number_format($angka, 2, ',', '.'); // 2 decimal places, comma for decimal, dot for thousand separator
+    return 'Rp ' . number_format($angka, 2, ',', '.'); // 2 decimal places, comma for decimal, dot for thousand separator
 }
 
 

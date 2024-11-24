@@ -36,8 +36,8 @@ class ProdukExportExcel implements FromCollection, WithHeadings, WithMapping, Wi
 
     public function map($produk): array
     {
-        \Log::info('Produk Data: ', $produk->toArray());  // Log produk untuk memeriksa data yang diproses
-
+        
+        $this->rowNumber++;
         return [
             $this->rowNumber,
             $produk->kode_produk,

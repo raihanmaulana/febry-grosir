@@ -85,8 +85,8 @@
                     <td>{{ $row['nama_barang'] }}</td> 
                     <td>{{ $row['total_item'] }}</td>
                     <!-- <td>{{ $row['total_harga'] }}</td> -->
-                    <td>{{ $row['diskon_persen'] }}</td>
-                    <td>{{ $row['diskon_rupiah'] }}</td>
+                    <td>{{ $row['diskon_persen_total'] }}</td>
+                    <td>{{ $row['diskon_rupiah_total'] }}</td>
                     <td>{{ $row['bayar'] }}</td>
                     <td>{{ $row['kasir'] }}</td>
                     

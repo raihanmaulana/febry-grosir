@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Kategori;
 use App\Models\Member;
-use App\Models\Pembelian;
-use App\Models\Pengeluaran;
-use App\Models\Penjualan;
 use App\Models\Produk;
+use App\Models\Kategori;
 use App\Models\Supplier;
+use App\Models\Pembelian;
+use App\Models\Penjualan;
+use App\Models\Pengeluaran;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
@@ -18,7 +20,7 @@ class DashboardController extends Controller
         $kategori = Kategori::count();
         $kategoriProduk = Kategori::all()->pluck('nama_kategori', 'id_kategori');
         $produk = Produk::count();
-        $supplier = Supplier::count();
+        $penjualan = Penjualan::count();
         $member = Member::count();
 
         $tanggal_awal = date('Y-m-01');
@@ -41,7 +43,7 @@ class DashboardController extends Controller
         }
 
         if (auth()->user()->level == 1) {
-            return view('admin.dashboard', compact('kategori', 'produk', 'supplier', 'member', 'tanggal_awal', 'tanggal_akhir', 'data_tanggal', 'data_pendapatan'));
+            return view('admin.dashboard', compact('kategori', 'produk', 'penjualan', 'member', 'tanggal_awal', 'tanggal_akhir', 'data_tanggal', 'data_pendapatan'));
         } else {
             return view('kasir.dashboard', compact('kategoriProduk'));
         }
@@ -60,39 +62,26 @@ class DashboardController extends Controller
 
     public function store(Request $request)
     {
+        DB::beginTransaction();
         try {
-            $validatedData = $request->validate([
-                'id_kategori' => 'required|exists:kategori,id_kategori',
-                'nama_produk' => 'required|string|max:255',
-                'merk' => 'nullable|string|max:255',
-                'harga_jual' => 'required|numeric|min:0',
-                'harga_grosir' => 'nullable|numeric|min:0',
-                'stok' => 'required|integer|min:0',
-            ]);
+            // Data pengguna yang ditambahkan
+            $request['added_by'] = Auth::id();
 
-            $validatedData['kode_produk'] = 'P' . tambah_nol_didepan(Produk::count() + 1, 6);
-            $validatedData['added_by'] = auth()->id();
+            // Simpan produk, validasi akan dilakukan di model
+            $produk = Produk::create($request->all());
 
-            // Simpan data ke database
-            $produk = Produk::create($validatedData);
+            DB::commit();
 
-            // Kirim respons JSON berisi data produk yang baru dibuat
             return response()->json([
                 'message' => 'Data berhasil disimpan',
-                'data' => [
-                    'DT_RowIndex' => $produk->id, // Ganti dengan ID produk
-                    'kode_produk' => $produk->kode_produk,
-                    'nama_produk' => $produk->nama_produk,
-                    'merk' => $produk->merk,
-                    'harga_jual' => $produk->harga_jual,
-                    'harga_grosir' => $produk->harga_grosir,
-                    'stok' => $produk->stok,
-                ]
+                'kode_produk' => $produk->kode_produk,
             ], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Terjadi kesalahan'], 500);
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Terjadi kesalahan',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 }

@@ -6,6 +6,8 @@ use App\Models\Produk;
 use App\Models\Kategori;
 use Illuminate\Http\Request;
 use App\Exports\ProdukExportExcel;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
@@ -26,9 +28,10 @@ class ProdukController extends Controller
     public function data()
     {
 
-        $produk = Produk::leftJoin('kategori', 'kategori.id_kategori', 'produk.id_kategori')
+        $produk = Produk::leftJoin('kategori', 'kategori.id_kategori', '=', 'produk.id_kategori')
             ->select('produk.*', 'nama_kategori')
-            ->orderBy('kode_produk', 'asc')
+            ->orderByRaw('LEFT(kode_produk, 3)') // Mengurutkan berdasarkan 3 karakter pertama (abjad)
+            ->orderByRaw('CAST(SUBSTRING(kode_produk, 4) AS UNSIGNED) ASC') // Mengurutkan berdasarkan angka setelah abjad
             ->get();
         return datatables()
             ->of($produk)
@@ -52,6 +55,12 @@ class ProdukController extends Controller
             })
             ->addColumn('stok', function ($produk) {
                 return format_uang($produk->stok);
+            })
+            ->addColumn('keterangan', function ($produk) {
+                return $produk->keterangan;
+            })
+            ->addColumn('added_by', function ($produk) {
+                return $produk->user->name ?? 'Tidak Diketahui';
             })
             ->addColumn('aksi', function ($produk) {
                 return '
@@ -83,12 +92,27 @@ class ProdukController extends Controller
      */
     public function store(Request $request)
     {
-        $produk = Produk::latest()->first() ?? new Produk();
-        $request['kode_produk'] = 'P' . tambah_nol_didepan((int)$produk->id_produk + 1, 6);
+        DB::beginTransaction();
+        try {
+            // Data pengguna yang ditambahkan
+            $request['added_by'] = Auth::id();
 
-        $produk = Produk::create($request->all());
+            // Simpan produk, validasi akan dilakukan di model
+            $produk = Produk::create($request->all());
 
-        return response()->json('Data berhasil disimpan', 200);
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Data berhasil disimpan',
+                'kode_produk' => $produk->kode_produk,
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Terjadi kesalahan',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

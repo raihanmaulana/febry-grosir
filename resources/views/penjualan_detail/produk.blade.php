@@ -7,33 +7,58 @@
                 <h4 class="modal-title">Pilih Produk</h4>
             </div>
             <div class="modal-body">
-                <table class="table table-striped table-bordered table-produk">
-                    <thead>
-                        <th width="5%">No</th>
-                        <th>Kode</th>
-                        <th>Nama</th>
-                        <th>Harga Grosir</th>
-                        <th><i class="fa fa-cog"></i></th>
-                    </thead>
-                    <tbody>
-                        @foreach ($produk as $key => $item)
-                        <tr>
-                            <td width="5%">{{ $key+1 }}</td>
-                            <td><span class="label label-success">{{ $item->kode_produk }}</span></td>
-                            <td>{{ $item->nama_produk }}</td>
-                            <td>{{ $item->harga_grosir }}</td>
-                            <td>
-                                <a href="#" class="btn btn-primary btn-xs btn-flat"
-                                    onclick="pilihProduk('{{ $item->id_produk }}', '{{ $item->kode_produk }}')">
-                                    <i class="fa fa-check-circle"></i>
-                                    Pilih
-                                </a>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                <!-- Wrapper for responsive table -->
+                <div class="table-responsive">
+                    <!-- Add the DataTable class for pagination, search, and sorting functionality -->
+                    <table class="table table-striped table-bordered table-produk" id="produk-table">
+                        <thead>
+                            <tr>
+                                <th width="5%">No</th>
+                                <th>Kode</th>
+                                <th>Nama</th>
+                                <th>Harga Jual</th>
+                                <th>Harga Grosir</th>
+                                <th>Stok</th>
+                                <th><i class="fa fa-cog"></i></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($produk as $key => $item)
+                            <tr>
+                                <td width="5%">{{ $key+1 }}</td>
+                                <td><span class="label label-success">{{ $item->kode_produk }}</span></td>
+                                <td>{{ $item->nama_produk }}</td>
+                                <td>{{ $item->harga_jual }}</td>
+                                <td>{{ $item->harga_grosir }}</td>
+                                <td>{{ $item->stok }}</td>
+                                <td>
+                                    <a href="#" class="btn btn-primary btn-xs btn-flat"
+                                       onclick="pilihProduk('{{ $item->id_produk }}', '{{ $item->kode_produk }}')">
+                                        <i class="fa fa-check-circle"></i> Pilih
+                                    </a>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div> <!-- End of table-responsive -->
             </div>
         </div>
     </div>
 </div>
+
+<!-- Include DataTables JS for pagination, search, etc. -->
+<script src="https://cdn.datatables.net/1.10.23/js/jquery.dataTables.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        // Initialize DataTable
+        $('#produk-table').DataTable({
+            "paging": true, // Enable pagination
+            "searching": true, // Enable search box
+            "lengthChange": true, // Allow changing the number of rows per page
+            "responsive": true, // Make it responsive for mobile view
+            "autoWidth": false // Prevent automatic width calculation (useful in some cases)
+        });
+    });
+</script>

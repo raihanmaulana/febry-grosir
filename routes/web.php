@@ -102,7 +102,7 @@ Route::group(['middleware' => 'auth'], function () {
             
         Route::post('/produk/kasir', [DashboardController::class, 'store'])->name('produk.kasir.store');
         Route::get('/produk/kasir/data', [DashboardController::class, 'dataKasir'])->name('produk.kasir.data');
-
+        Route::resource('/kategori', KategoriController::class);
     });
 
     Route::group(['middleware' => 'level:1'], function () {

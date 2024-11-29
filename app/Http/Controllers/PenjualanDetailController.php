@@ -49,11 +49,14 @@ class PenjualanDetailController extends Controller
             $row['kode_produk'] = '<span class="label label-success">' . $item->produk['kode_produk'] . '</span>';
             $row['nama_produk'] = $item->produk['nama_produk'];
             $row['harga_jual']  = 'Rp. ' . format_uang($item->harga_jual);
+            $row['harga_jual_asli']  = 'Rp. ' . format_uang($item->harga_jual_asli);
+            $row['harga_grosir']  = 'Rp. ' . format_uang($item->harga_grosir);
             $row['toggle_harga'] = '<label class="switch">
                                         <input type="checkbox" class="toggle-harga" data-id="' . $item->id_penjualan_detail . '" ' . $toggleChecked . '>
                                         <span class="slider"></span>
                                     </label>';
             $row['jumlah']      = '<input type="number" class="form-control input-sm quantity" data-id="' . $item->id_penjualan_detail . '" value="' . $item->jumlah . '" min="0" max="100">';
+            $row['stok'] = $item->produk['stok'];
             // Input diskon persen
             $row['diskon_persen'] = '<input type="number" class="form-control input-sm diskon-persen" data-id="' . $item->id_penjualan_detail . '" value="' . $item->diskon_persen . '" min="0" max="100">';
 
@@ -83,8 +86,10 @@ class PenjualanDetailController extends Controller
         <div class="total_item hide">' . $total_item . '</div>',
             'nama_produk' => '',
             'harga_jual'  => '',
+            'harga_jual_asli'  => '',
             'harga_grosir'  => '',
             'jumlah'      => '',
+            'stok' => '',
             'diskon_persen' => '',
             'diskon_rupiah' => '',
             'toggle_harga' => '',

@@ -63,7 +63,7 @@
     <br>
     <div>
         <p style="float: left;">{{ date('d-m-Y') }}</p>
-        <p style="float: right">{{ strtoupper(auth()->user()->name) }}</p>
+        <p style="float: right">{{ 'Kasir: '.strtoupper(auth()->user()->name) }}</p> <!-- Nama Kasir -->
     </div>
     <div class="clear-both" style="clear: both;"></div>
     <p>No: {{ tambah_nol_didepan($penjualan->id_penjualan, 10) }}</p>
@@ -109,10 +109,16 @@
             <td>Kembali:</td>
             <td class="text-right">{{ format_uang($penjualan->diterima - $penjualan->bayar) }}</td>
         </tr>
+        @if(!empty($penjualan->nama_customer))
+        <tr>
+            <td>Nama Customer:</td>
+            <td class="text-right">{{ $penjualan->nama_customer }}</td>
+        </tr>
+        @endif
     </table>
 
     <p class="text-center">===================================</p>
-    <p class="text-center">-- TERIMA KASIH --</p>
+    <p class="text-center">{{ ($setting->keterangan_struk) }}</p>
 
     <script>
         let body = document.body;

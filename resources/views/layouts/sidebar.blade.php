@@ -40,11 +40,11 @@
                     <i class="fa fa-truck"></i> <span>Supplier</span>
                 </a>
             </li> -->
-            <li>
-                <a href="{{ route('gudang.index') }}">
-                    <i class="fa fa-warehouse"></i> <span>Gudang</span>
-                </a>
-            </li>
+            <!--<li>-->
+            <!--    <a href="{{ route('gudang.index') }}">-->
+            <!--        <i class="fa fa-warehouse"></i> <span>Gudang</span>-->
+            <!--    </a>-->
+            <!--</li>-->
             <li class="header">TRANSAKSI</li>
             <!-- <li>
                 <a href="{{ route('pengeluaran.index') }}">

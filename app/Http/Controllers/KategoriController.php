@@ -58,7 +58,11 @@ class KategoriController extends Controller
         $kategori->nama_kategori = $request->nama_kategori;
         $kategori->save();
 
-        return response()->json('Data berhasil disimpan', 200);
+        // Kembalikan ID dan nama kategori sebagai JSON
+        return response()->json([
+            'id_kategori' => $kategori->id_kategori,
+            'nama_kategori' => $kategori->nama_kategori
+        ]);
     }
 
     /**

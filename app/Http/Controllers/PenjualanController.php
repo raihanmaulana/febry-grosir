@@ -37,11 +37,11 @@ class PenjualanController extends Controller
             ->addColumn('tanggal', function ($penjualan) {
                 return tanggal_indonesia($penjualan->created_at, false);
             })
-            ->editColumn('diskon_persen', function ($penjualan) {
-                return $penjualan->diskon_persen . '%';
+            ->editColumn('diskon_persen_total', function ($penjualan) {
+                return $penjualan->diskon_persen_total . '%';
             })
-            ->editColumn('diskon_rupiah', function ($penjualan) {
-                return 'Rp. ' . $penjualan->diskon_rupiah;
+            ->editColumn('diskon_rupiah_total', function ($penjualan) {
+                return 'Rp. ' . $penjualan->diskon_rupiah_total;
             })
             ->editColumn('kasir', function ($penjualan) {
                 return $penjualan->user->name ?? '';
@@ -64,11 +64,12 @@ class PenjualanController extends Controller
         // $penjualan->id_member = null;
         $penjualan->total_item = 0;
         $penjualan->total_harga = 0;
-        $penjualan->diskon_persen = 0;
-        $penjualan->diskon_rupiah = 0;
+        $penjualan->diskon_persen_total = 0;
+        $penjualan->diskon_rupiah_total = 0;
         $penjualan->bayar = 0;
         $penjualan->diterima = 0;
         $penjualan->id_user = auth()->id();
+        $penjualan->nama_customer = null;
         $penjualan->save();
 
         session(['id_penjualan' => $penjualan->id_penjualan]);
@@ -93,10 +94,15 @@ class PenjualanController extends Controller
 
         // Hitung total harga setelah diskon (jika ada)
         $total_harga = $request->total;
-        if ($request->has('diskon_rupiah') && $request->diskon_rupiah > 0) {
-            $total_harga = $request->total - $request->diskon_rupiah;
-        } elseif ($request->has('diskon_persen') && $request->diskon_persen > 0) {
-            $total_harga = $request->total - ($request->diskon_persen / 100 * $request->total);
+
+        // Jika diskon persen ada
+        if ($request->has('diskon_total_persen') && $request->diskon_total_persen > 0) {
+            $total_harga -= ($request->diskon_total_persen / 100) * $request->total;
+        }
+
+        // Jika diskon rupiah ada
+        if ($request->has('diskon_total_rupiah') && $request->diskon_total_rupiah > 0) {
+            $total_harga -= $request->diskon_total_rupiah;
         }
 
         // Cek apakah jumlah diterima cukup
@@ -111,8 +117,11 @@ class PenjualanController extends Controller
         $penjualan->id_member = $request->id_member;
         $penjualan->total_item = $request->total_item;
         $penjualan->total_harga = $total_harga;
+        $penjualan->diskon_persen_total = $request->diskon_persen_total;
+        $penjualan->diskon_rupiah_total = $request->diskon_rupiah_total;
         $penjualan->bayar = $total_harga;
         $penjualan->diterima = $request->diterima;
+        $penjualan->nama_customer = $request->nama_customer;
         $penjualan->update();
 
         // Update detail penjualan dan stok produk
@@ -120,21 +129,10 @@ class PenjualanController extends Controller
             // Ambil harga awal dari harga jual atau grosir
             $hargaAwal = $item->harga_jual;
 
-            // Tentukan diskon yang diterapkan
-            $diskonPersen = $item->diskon_persen;
-            $diskonRupiah = $item->diskon_rupiah;
-
-            // Hitung subtotal berdasarkan diskon
+            // Hitung subtotal berdasarkan diskon (diskon persen dan rupiah sudah dihitung sebelumnya)
             $subtotal = $hargaAwal * $item->jumlah;
-            if ($diskonPersen > 0) {
-                $subtotal -= ($diskonPersen / 100) * $subtotal;
-            } elseif ($diskonRupiah > 0) {
-                $subtotal -= $diskonRupiah * $item->jumlah;
-            }
 
             // Perbarui data detail
-            $item->diskon_persen = $diskonPersen;
-            $item->diskon_rupiah = $diskonRupiah;
             $item->subtotal = $subtotal;
             $item->update();
 
@@ -146,13 +144,13 @@ class PenjualanController extends Controller
             }
         }
 
-
         return response()->json([
             'status' => 'success',
             'message' => 'Transaksi berhasil disimpan.',
             'redirect' => route('transaksi.selesai')
         ]);
     }
+
 
 
     public function show($id)
@@ -221,7 +219,9 @@ class PenjualanController extends Controller
             ->where('id_penjualan', session('id_penjualan'))
             ->get();
 
-        return view('penjualan.nota_kecil', compact('setting', 'penjualan', 'detail'));
+        $nama_customer = $penjualan->nama_customer;
+
+        return view('penjualan.nota_kecil', compact('setting', 'penjualan', 'detail', 'nama_customer'));
     }
 
     public function notaBesar()
@@ -258,18 +258,16 @@ class PenjualanController extends Controller
             })->implode(', '); // Gabungkan dengan koma
 
             // Hitung diskon total dari penjualan_detail
-            $diskon_persen_total = $penjualan->penjualanDetail->sum('diskon_persen');
-            $diskon_rupiah_total = $penjualan->penjualanDetail->sum(function ($detail) {
-                return $detail->diskon_rupiah * $detail->jumlah; // Diskon rupiah * jumlah barang
-            });
+            $diskon_persen_total = $penjualan->diskon_persen_total ?? 0;
+            $diskon_rupiah_total = $penjualan->diskon_rupiah_total ?? 0;
 
-            return [
+            return [    
                 'id' => $penjualan->id_penjualan,
                 'tanggal' => tanggal_indonesia($penjualan->created_at, false),
                 'total_item' => format_uang($penjualan->total_item),
                 'total_harga' => format_uang($penjualan->total_harga),
-                'diskon_persen' => $diskon_persen_total . '%', // Diskon persen dari penjualan_detail
-                'diskon_rupiah' => format_uang($diskon_rupiah_total), // Diskon rupiah dari penjualan_detail
+                'diskon_persen_total' => $diskon_persen_total . '%', // Diskon persen dari penjualan_detail
+                'diskon_rupiah_total' => format_uang($diskon_rupiah_total), // Diskon rupiah dari penjualan_detail
                 'bayar' => format_uang($penjualan->bayar),
                 'kasir' => $penjualan->user->name ?? '-',
                 'nama_barang' => $nama_barang, // Nama barang dengan jumlah

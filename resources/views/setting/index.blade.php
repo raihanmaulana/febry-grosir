@@ -85,6 +85,13 @@
                             <span class="help-block with-errors"></span>
                         </div>
                     </div>
+                    <div class="form-group row">
+                        <label for="keterangan_struk" class="col-lg-2 control-label">Keterangan Struk</label>
+                        <div class="col-lg-6">
+                            <textarea name="keterangan_struk" class="form-control" id="keterangan_struk" rows="3" required></textarea>
+                            <span class="help-block with-errors"></span>
+                        </div>
+                    </div>
                 </div>
                 <div class="box-footer text-right">
                     <button class="btn btn-sm btn-flat btn-primary"><i class="fa fa-save"></i> Simpan Perubahan</button>
@@ -134,6 +141,7 @@
                 $('[name=alamat]').val(response.alamat);
                 $('[name=diskon]').val(response.diskon);
                 $('[name=tipe_nota]').val(response.tipe_nota);
+                $('[name=keterangan_struk]').val(response.keterangan_struk);
                 $('title').text(response.nama_perusahaan + ' | Pengaturan');
                 
                 let words = response.nama_perusahaan.split(' ');

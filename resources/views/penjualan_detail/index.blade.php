@@ -141,9 +141,11 @@ input:checked + .slider:before {
                         <th width="5%">No</th>
                         <th>Kode</th>
                         <th>Nama</th>
-                        <th>Harga</th>
+                        <th>Harga Jual</th>
+                        <th>Harga Grosir</th>
                         <th>Grosir</th>
                         <th width="15%">Jumlah</th>
+                        <th width="15%">Stok</th>
                         <th width="10%">Diskon %</th>
                         <th width="10%">Diskon Rupiah</th>
                         <th>Subtotal</th>
@@ -163,7 +165,9 @@ input:checked + .slider:before {
                             <input type="hidden" name="total" id="total">
                             <input type="hidden" name="total_item" id="total_item">
                             <input type="hidden" name="bayar" id="bayar">
-                            <input type="number" name="diskon_persen" value="{{ old('diskon_persen', $penjualan->diskon_persen ?? '') }}" hidden>
+                            <input type="hidden" name="nama_customer" id="nama_customer">
+                            <input type="hidden" name="diskon_total_persen" id="diskon_total_persen">
+                            <input type="hidden" name="diskon_total_rupiah" id="diskon_total_rupiah">
 
 
                             <div class="form-group row">
@@ -179,6 +183,20 @@ input:checked + .slider:before {
                                 </div>
                             </div>
                             <div class="form-group row">
+                                <label for="diskon_persen_total" class="col-lg-2 control-label">Diskon (%)</label>
+                                <div class="col-lg-8">
+                                    <input type="number" id="diskon_persen_total" name="diskon_persen_total" class="form-control" value="{{ old('diskon_persen_total', $penjualan->diskon_persen_total ?? '') }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label for="diskon_rupiah_total" class="col-lg-2 control-label">Diskon (Rp)</label>
+                                <div class="col-lg-8">
+                                    <input type="number" id="diskon_rupiah_total" name="diskon_rupiah_total" class="form-control" value="{{ old('diskon_rupiah_total', $penjualan->diskon_rupiah_total ?? '') }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
                                 <label for="diterima" class="col-lg-2 control-label">Diterima</label>
                                 <div class="col-lg-8">
                                     <input type="number" id="diterima" class="form-control @error('diterima') is-invalid @enderror" name="diterima" value="{{ old('diterima', $penjualan->diterima ?? 0) }}">
@@ -188,6 +206,13 @@ input:checked + .slider:before {
                                         {{ $message }}
                                     </div>
                                     @enderror
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label for="nama_customer" class="col-lg-2 control-label">Nama Customer</label>
+                                <div class="col-lg-8">
+                                    <input type="text" id="nama_customer" name="nama_customer" class="form-control" value="{{ old('nama_customer', $penjualan->nama_customer ?? '') }}">
                                 </div>
                             </div>
 
@@ -245,12 +270,15 @@ input:checked + .slider:before {
                     {
                         data: 'harga_jual'
                     },
+                    {
+                        data: 'harga_grosir'
+                    },
                     { data: 'toggle_harga' },
-                    // {
-                    //     data: 'harga_grosir'
-                    // },
                     {
                         data: 'jumlah'
+                    },
+                    {
+                        data: 'stok'
                     },
                     {
                         data: 'diskon_persen',
@@ -504,36 +532,74 @@ input:checked + .slider:before {
         }
     }
 
-    function loadForm(diskonPersen = 0, diskonRupiah = 0, diterima = 0) {
-        let total = $('.total').text();
+    function loadForm(diskonPersen = 0, diskonRupiah = 0, diterima = 0, diskonTotalPersen = 0, diskonTotalRupiah = 0) {
+    let total = parseFloat($('.total').text().replace('Rp. ', '').replace(',', '')) || 0; // Total harga sebelum diskon
+    let totalItem = parseInt($('.total_item').text()) || 0; // Total item
 
-        // Pastikan log ini menampilkan nilai diterima yang benar
-        console.log("Mengirim nilai diterima:", diterima);
+    // Perhitungan diskon dan total
+    let totalDiskonPersen = (diskonTotalPersen / 100) * total;
+    let totalDiskonRupiah = diskonTotalRupiah;
+    let totalSetelahDiskon = total - totalDiskonPersen - totalDiskonRupiah;
 
-        $.get(`{{ url('/transaksi/loadform') }}/${diskonPersen}/${total}/${diterima}`)
-            .done(response => {
-                $('#totalrp').val('Rp. ' + response.totalrp);
-                $('#bayarrp').val('Rp. ' + response.bayarrp);
-                $('#bayar').val(response.bayar);
-                $('.tampil-bayar').text('Bayar: Rp. ' + response.bayarrp);
-                $('.tampil-terbilang').text(response.terbilang);
+    // Pastikan total dan total_item diperbarui
+    $('#total').val(totalSetelahDiskon); // Set total ke input hidden
+    $('#total_item').val(totalItem); // Set total_item ke input hidden
 
-                $('#kembali').val('Rp.' + response.kembalirp);
-                if ($('#diterima').val() != 0) {
-                    $('.tampil-bayar').text('Kembali: Rp. ' + response.kembalirp);
-                    $('.tampil-terbilang').text(response.kembali_terbilang);
-                }
-            })
-            .fail(errors => {
-                alert('Tidak dapat menampilkan data');
-            });
-    }
+    $.get(`{{ url('/transaksi/loadform') }}/${diskonPersen}/${totalSetelahDiskon}/${diterima}`)
+        .done(response => {
+            $('#totalrp').val('Rp. ' + response.totalrp);
+            $('#bayarrp').val('Rp. ' + response.bayarrp);
+            $('#bayar').val(response.bayar);
+            $('.tampil-bayar').text('Bayar: Rp. ' + response.bayarrp);
+            $('.tampil-terbilang').text(response.terbilang);
+            $('#kembali').val('Rp.' + response.kembalirp);
+            if ($('#diterima').val() != 0) {
+                $('.tampil-bayar').text('Kembali: Rp. ' + response.kembalirp);
+                $('.tampil-terbilang').text(response.kembali_terbilang);
+            }
+        })
+        .fail(errors => {
+            alert('Tidak dapat menampilkan data');
+        });
+}
 
-    $(document).on('input', '#diterima', function() {
-        $('#total').val($('.total').text()); // Set nilai total
-        $('#total_item').val($('.total_item').text()); // Set nilai total_item
-        loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val(), $(this).val());
-    });
+$(document).on('input', '#diskon_persen_total', function() {
+    let diskonTotalPersen = parseFloat($(this).val()) || 0;
+    let diskonTotalRupiah = parseFloat($('#diskon_rupiah_total').val()) || 0;
+    let diterima = parseFloat($('#diterima').val()) || 0;
+
+    loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val(), diterima, diskonTotalPersen, diskonTotalRupiah);
+});
+
+$(document).on('input', '#diskon_rupiah_total', function() {
+    let diskonTotalRupiah = parseFloat($(this).val()) || 0;
+    let diskonTotalPersen = parseFloat($('#diskon_persen_total').val()) || 0;
+    let diterima = parseFloat($('#diterima').val()) || 0;
+
+    loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val(), diterima, diskonTotalPersen, diskonTotalRupiah);
+});
+
+$(document).on('input', '#diterima', function() {
+    let diterima = parseFloat($(this).val()) || 0;
+    let diskonTotalPersen = parseFloat($('#diskon_persen_total').val()) || 0;
+    let diskonTotalRupiah = parseFloat($('#diskon_rupiah_total').val()) || 0;
+
+    // Hitung total setelah diskon dan kirim ke backend
+    let total = parseFloat($('.total').text().replace('Rp. ', '').replace(',', '')) || 0;
+    let totalDiskonPersen = (diskonTotalPersen / 100) * total;
+    let totalDiskonRupiah = diskonTotalRupiah;
+    let totalSetelahDiskon = total - totalDiskonPersen - totalDiskonRupiah;
+
+    // Ambil nilai total_item dari elemen yang sesuai di frontend
+    let totalItem = parseInt($('.total_item').text()) || 0;  // Pastikan total_item berisi jumlah item yang benar
+    
+    // Kirim data ke loadForm
+    loadForm($('#diskon_persen').val(), $('#diskon_rupiah').val(), diterima, diskonTotalPersen, diskonTotalRupiah, totalSetelahDiskon, totalItem);
+});
+
+
+
+
 
     let html5QrCode;
     let scanning = false; // Flag untuk mengetahui apakah sedang scan atau tidak

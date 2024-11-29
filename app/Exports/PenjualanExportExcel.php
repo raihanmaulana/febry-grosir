@@ -43,10 +43,8 @@ class PenjualanExportExcel implements FromCollection, WithHeadings, WithMapping,
             return "{$nama_produk} ({$jumlah})";
         })->implode(', ');
 
-        $diskon_persen_total = $penjualan->penjualanDetail->sum('diskon_persen');
-        $diskon_rupiah_total = $penjualan->penjualanDetail->sum(function ($detail) {
-            return $detail->diskon_rupiah * $detail->jumlah;
-        });
+        $diskon_persen_total = $penjualan->diskon_persen_total ?? 0;
+        $diskon_rupiah_total = $penjualan->diskon_rupiah_total ?? 0;
 
         return [
             $this->rowNumber,

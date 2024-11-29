@@ -75,10 +75,10 @@ Daftar Penjualan
                     data: 'total_harga'
                 },
                 {
-                    data: 'diskon_persen'
+                    data: 'diskon_persen_total'
                 },
                 {
-                    data: 'diskon_rupiah'
+                    data: 'diskon_rupiah_total'
                 },
                 {
                     data: 'bayar'

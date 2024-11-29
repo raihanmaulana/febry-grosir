@@ -39,9 +39,9 @@
                             <th>Harga Beli</th>
                             <th>Harga Jual</th>
                             <th>Harga Grosir</th>
-                            <!-- <th>Diskon %</th>
-                            <th>Diskon Rupiah</th> -->
                             <th>Stok</th>
+                            <th>Keterangan</th>
+                            <th>Ditambahkan Oleh</th>
                             <th width="15%"><i class="fa fa-cog"></i></th>
                         </thead>
                     </table>
@@ -76,6 +76,8 @@
                 {data: 'harga_jual'},
                 {data: 'harga_grosir'},
                 {data: 'stok'},
+                {data: 'keterangan'},
+                {data: 'added_by'},
                 {data: 'aksi', searchable: false, sortable: false},
             ]
         });
@@ -126,8 +128,6 @@
                 $('#modal-form [name=harga_beli]').val(response.harga_beli);
                 $('#modal-form [name=harga_jual]').val(response.harga_jual);
                 $('#modal-form [name=harga_grosir]').val(response.harga_grosir);
-                // $('#modal-form [name=diskon_persen]').val(response.diskon_persen);
-                // $('#modal-form [name=diskon_rupiah]').val(response.diskon_rupiah);
                 $('#modal-form [name=stok]').val(response.stok);
             })
             .fail((errors) => {

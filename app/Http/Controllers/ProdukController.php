@@ -20,10 +20,15 @@ class ProdukController extends Controller
      */
     public function index()
     {
+        // Mengambil kategori dengan nama sebagai value dan ID sebagai key
         $kategori = Kategori::all()->pluck('nama_kategori', 'id_kategori');
+
+        // Urutkan kategori berdasarkan nama_kategori (nilai)
+        $kategori = $kategori->sort();
 
         return view('produk.index', compact('kategori'));
     }
+
 
     public function data()
     {

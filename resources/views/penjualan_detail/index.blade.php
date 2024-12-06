@@ -166,6 +166,7 @@ input:checked + .slider:before {
                             <input type="hidden" name="total_item" id="total_item">
                             <input type="hidden" name="bayar" id="bayar">
                             <input type="hidden" name="nama_customer" id="nama_customer">
+                            <input type="hidden" name="keterangan" id="keterangan">
                             <input type="hidden" name="diskon_total_persen" id="diskon_total_persen">
                             <input type="hidden" name="diskon_total_rupiah" id="diskon_total_rupiah">
 
@@ -213,6 +214,13 @@ input:checked + .slider:before {
                                 <label for="nama_customer" class="col-lg-2 control-label">Nama Customer</label>
                                 <div class="col-lg-8">
                                     <input type="text" id="nama_customer" name="nama_customer" class="form-control" value="{{ old('nama_customer', $penjualan->nama_customer ?? '') }}">
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <label for="keterangan" class="col-lg-2 control-label">Keterangan</label>
+                                <div class="col-lg-8">
+                                    <input type="text" id="keterangan" name="keterangan" class="form-control" value="{{ old('keterangan', $penjualan->keterangan ?? '') }}">
                                 </div>
                             </div>
 

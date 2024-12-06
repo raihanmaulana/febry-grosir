@@ -10,42 +10,57 @@ Daftar Penjualan
 @endsection
 
 @section('content')
+<!-- Tambahkan Flatpickr CSS -->
+<link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <div class="row">
     <div class="col-lg-12">
         <div class="box">
             <div class="box-header with-border">
-                <div class="btn-group">
-                    <a href="{{ route('penjualan.exportPdf') }}" class="btn btn-success btn-xs btn-flat" style="margin-right: 5px;">
-                    <i class="fa fa-file-pdf-o"></i> Export PDF
-                    </a>
-                    <a href="{{ route('penjualan.exportExcel') }}" class="btn btn-warning btn-xs btn-flat">
-                    <i class="fa fa-file-pdf-o"></i> Export Excel
-                    </a>
+                <div class="row">
+                    <!-- Tombol Export di Kiri -->
+                    <!-- Tombol untuk membuka modal -->
+                    <div class="col-xs-12 col-md-6 mb-3">
+                        <div class="btn-group">
+                            <a href="{{ route('penjualan.exportPdf') }}" class="btn btn-success btn-xs btn-flat" style="margin-right: 5px;">
+                                <i class="fa fa-file-pdf-o"></i> Export PDF
+                            </a>
+                            <a href="{{ route('penjualan.exportExcel') }}" class="btn btn-warning btn-xs btn-flat" style="margin-right: 5px;">
+                                <i class="fa fa-file-excel-o"></i> Export Excel
+                            </a>
+                            <button onclick="openDateFilterModal()" class="btn btn-info btn-xs btn-flat">
+                                <i class="fa fa-calendar"></i> Pilih Periode
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
+
             <div class="box-body table-responsive">
-
-
-                <table class="table table-stiped table-bordered table-penjualan">
+                <table class="table table-striped table-bordered table-penjualan">
                     <thead>
-                        <th width="5%">No</th>
-                        <th>Tanggal</th>
-                        <!-- <th>Kode Member</th> -->
-                        <th>Total Item</th>
-                        <th>Total Harga</th>
-                        <th>Diskon %</th>
-                        <th>Diskon Rupiah</th>
-                        <th>Total Bayar</th>
-                        <th>Kasir</th>
-                        <th width="15%"><i class="fa fa-cog"></i></th>
+                        <tr>
+                            <th width="5%">No</th>
+                            <th>Tanggal</th>
+                            <th>Total Item</th>
+                            <th>Total Harga</th>
+                            <th>Diskon %</th>
+                            <th>Diskon Rupiah</th>
+                            <th>Total Bayar</th>
+                            <th>Kasir</th>
+                            <th>Keterangan</th>
+                            <th width="15%"><i class="fa fa-cog"></i></th>
+                        </tr>
                     </thead>
                 </table>
             </div>
         </div>
+
     </div>
 </div>
 
 @includeIf('penjualan.detail')
+@includeIf('penjualan.form')
 @endsection
 
 @push('scripts')
@@ -53,11 +68,16 @@ Daftar Penjualan
     let table, table1;
 
     $(function() {
-        table = $('.table-penjualan').DataTable({
+        var table = $('.table-penjualan').DataTable({
             processing: true,
             autoWidth: false,
             ajax: {
                 url: "{{ route('penjualan.data') }}",
+                data: function(d) {
+                    // Ambil nilai tanggal mulai dan tanggal akhir
+                    d.start_date = $('#start-date').val();
+                    d.end_date = $('#end-date').val();
+                }
             },
             columns: [{
                     data: 'DT_RowIndex',
@@ -67,7 +87,6 @@ Daftar Penjualan
                 {
                     data: 'tanggal'
                 },
-                // {data: 'kode_member'},
                 {
                     data: 'total_item'
                 },
@@ -87,11 +106,21 @@ Daftar Penjualan
                     data: 'kasir'
                 },
                 {
+                    data: 'keterangan'
+                },
+                {
                     data: 'aksi',
                     searchable: false,
                     sortable: false
-                },
+                }
             ]
+        });
+
+        // Event listener untuk tombol filter
+        $('#filter-btn').on('click', function() {
+            table.ajax.reload(); 
+
+            $('#date-filter-modal').modal('hide');
         });
 
         table1 = $('.table-detail').DataTable({
@@ -122,6 +151,8 @@ Daftar Penjualan
         })
     });
 
+
+
     function showDetail(url) {
         $('#modal-detail').modal('show');
 
@@ -144,5 +175,49 @@ Daftar Penjualan
                 });
         }
     }
+
+    $(document).ready(function() {
+        flatpickr("#start-date", {
+            dateFormat: "Y-m-d", // Format tanggal yang digunakan
+        });
+        flatpickr("#end-date", {
+            dateFormat: "Y-m-d", // Format tanggal yang digunakan
+        });
+    });
+
+    // Fungsi untuk membuka modal
+    function openDateFilterModal() {
+        $('#date-filter-modal').modal('show');
+    }
 </script>
+
+<script>
+    // Fungsi untuk membuka popup cetak struk
+    function cetakStruk(url) {
+        popupCenter(url, 'Cetak Struk', 625, 500);
+    }
+
+    function popupCenter(url, title, w, h) {
+        const dualScreenLeft = window.screenLeft !== undefined ? window.screenLeft : window.screenX;
+        const dualScreenTop = window.screenTop !== undefined ? window.screenTop : window.screenY;
+
+        const width = window.innerWidth ? window.innerWidth : document.documentElement.clientWidth ? document.documentElement.clientWidth : screen.width;
+        const height = window.innerHeight ? window.innerHeight : document.documentElement.clientHeight ? document.documentElement.clientHeight : screen.height;
+
+        const systemZoom = width / window.screen.availWidth;
+        const left = (width - w) / 2 / systemZoom + dualScreenLeft;
+        const top = (height - h) / 2 / systemZoom + dualScreenTop;
+        const newWindow = window.open(url, title,
+            `
+            scrollbars=yes,
+            width  = ${w / systemZoom}, 
+            height = ${h / systemZoom}, 
+            top    = ${top}, 
+            left   = ${left}
+        `);
+
+        if (window.focus) newWindow.focus();
+    }
+</script>
+
 @endpush

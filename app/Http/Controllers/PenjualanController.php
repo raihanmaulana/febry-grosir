@@ -6,10 +6,11 @@ use App\Models\Produk;
 use App\Models\Setting;
 use App\Models\Penjualan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use App\Models\PenjualanDetail;
 use App\Exports\PenjualanExport;
-use App\Exports\PenjualanExportExcel;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\PenjualanExportExcel;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class PenjualanController extends Controller
@@ -19,9 +20,27 @@ class PenjualanController extends Controller
         return view('penjualan.index');
     }
 
-    public function data()
+    public function data(Request $request)
     {
-        $penjualan = Penjualan::orderBy('id_penjualan', 'desc')->get();
+        // Ambil parameter tanggal mulai dan tanggal akhir dari request
+        $start_date = $request->get('start_date');
+        $end_date = $request->get('end_date');
+
+        // Query dasar untuk mengambil data penjualan
+        $penjualan = Penjualan::orderBy('created_at', 'desc');
+
+        // Jika ada filter tanggal, tambahkan kondisi pada query
+        if ($start_date && $end_date) {
+            // Ubah format tanggal agar mencakup waktu
+            $start_date = $start_date . ' 00:00:00'; // Mulai dari jam 00:00:00
+            $end_date = $end_date . ' 23:59:59'; // Sampai jam 23:59:59
+
+            // Terapkan filter tanggal
+            $penjualan = $penjualan->whereBetween('created_at', [$start_date, $end_date]);
+        }
+
+        $penjualan = $penjualan->get();
+
         return datatables()
             ->of($penjualan)
             ->addIndexColumn()
@@ -46,17 +65,21 @@ class PenjualanController extends Controller
             ->editColumn('kasir', function ($penjualan) {
                 return $penjualan->user->name ?? '';
             })
+            ->addColumn('keterangan', function ($penjualan) {
+                return $penjualan->keterangan ?? '';
+            })
             ->addColumn('aksi', function ($penjualan) {
                 return '
-                <div class="btn-group">
-                    <button onclick="showDetail(`' . route('penjualan.show', $penjualan->id_penjualan) . '`)" class="btn btn-xs btn-info btn-flat"><i class="fa fa-eye"></i></button>
-                    <button onclick="deleteData(`' . route('penjualan.destroy', $penjualan->id_penjualan) . '`)" class="btn btn-xs btn-danger btn-flat"><i class="fa fa-trash"></i></button>
-                </div>
-                ';
+            <div class="btn-group">
+                <button onclick="showDetail(`' . route('penjualan.show', $penjualan->id_penjualan) . '`)" class="btn btn-xs btn-info btn-flat"><i class="fa fa-eye"></i></button>
+                <button onclick="deleteData(`' . route('penjualan.destroy', $penjualan->id_penjualan) . '`)" class="btn btn-xs btn-danger btn-flat"><i class="fa fa-trash"></i></button>
+                <button onclick="cetakStruk(`' . route('transaksi.nota_kecil.penjualan', $penjualan->id_penjualan) . '`)" class="btn btn-xs btn-warning btn-flat"><i class="fa fa-print"></i> Cetak Struk</button>
+            </div>';
             })
             ->rawColumns(['aksi'])
             ->make(true);
     }
+
 
     public function create()
     {
@@ -70,6 +93,7 @@ class PenjualanController extends Controller
         $penjualan->diterima = 0;
         $penjualan->id_user = auth()->id();
         $penjualan->nama_customer = null;
+        $penjualan->keterangan = null;
         $penjualan->save();
 
         session(['id_penjualan' => $penjualan->id_penjualan]);
@@ -122,6 +146,7 @@ class PenjualanController extends Controller
         $penjualan->bayar = $total_harga;
         $penjualan->diterima = $request->diterima;
         $penjualan->nama_customer = $request->nama_customer;
+        $penjualan->keterangan = $request->keterangan;
         $penjualan->update();
 
         // Update detail penjualan dan stok produk
@@ -224,6 +249,25 @@ class PenjualanController extends Controller
         return view('penjualan.nota_kecil', compact('setting', 'penjualan', 'detail', 'nama_customer'));
     }
 
+    public function notaKecilPenjualan($id_penjualan)
+    {
+        $setting = Setting::first();
+        $penjualan = Penjualan::find($id_penjualan);
+
+        if (! $penjualan) {
+            abort(404); // Penjualan tidak ditemukan
+        }
+
+        $detail = PenjualanDetail::with('produk')
+            ->where('id_penjualan', $id_penjualan)
+            ->get();
+
+        $nama_customer = $penjualan->nama_customer;
+
+        return view('penjualan.nota_kecil', compact('setting', 'penjualan', 'detail', 'nama_customer'));
+    }
+
+
     public function notaBesar()
     {
         $setting = Setting::first();
@@ -261,7 +305,7 @@ class PenjualanController extends Controller
             $diskon_persen_total = $penjualan->diskon_persen_total ?? 0;
             $diskon_rupiah_total = $penjualan->diskon_rupiah_total ?? 0;
 
-            return [    
+            return [
                 'id' => $penjualan->id_penjualan,
                 'tanggal' => tanggal_indonesia($penjualan->created_at, false),
                 'total_item' => format_uang($penjualan->total_item),
@@ -287,5 +331,20 @@ class PenjualanController extends Controller
     public function exportExcel()
     {
         return Excel::download(new PenjualanExportExcel, 'laporan_penjualan.xlsx');
+    }
+
+    public function getTotalPenjualan(Request $request)
+    {
+        $startDate = Carbon::createFromFormat('d-m-Y', $request->start_date)->startOfDay();
+        $endDate = Carbon::createFromFormat('d-m-Y', $request->end_date)->endOfDay();
+
+        // Hitung total penjualan dalam rentang waktu yang diberikan
+        $totalPenjualan = Penjualan::whereBetween('tanggal', [$startDate, $endDate])
+            ->sum('bayar'); // Gantilah 'bayar' dengan nama kolom yang sesuai di database Anda
+            \Log::info($totalPenjualan);
+            
+        return response()->json([
+            'total' => number_format($totalPenjualan, 0, ',', '.')
+        ]);
     }
 }

@@ -35,21 +35,35 @@ class ProdukExportExcel implements FromCollection, WithHeadings, WithMapping, Wi
     }
 
     public function map($produk): array
-    {
-        
-        $this->rowNumber++;
-        return [
-            $this->rowNumber,
-            $produk->kode_produk,
-            $produk->nama_produk,
-            $produk->kategori->nama_kategori ?? 'Tidak Diketahui',
-            $produk->merk,
-            format_uang_excel($produk->harga_beli),
-            format_uang_excel($produk->harga_jual),
-            format_uang_excel($produk->harga_grosir),
-            $produk->stok,
-        ];
+{
+    $this->rowNumber++;
+
+    // Cek apakah harga_grosir adalah array yang berisi 'jenis' dan 'harga'
+    $hargaGrosir = '';
+    if (is_array($produk->harga_grosir) && isset($produk->harga_grosir['harga'])) {
+        // Ambil nilai harga dari array
+        $hargaGrosir = $produk->harga_grosir['harga'];
+    } else {
+        // Jika harga grosir bukan array, gunakan harga langsung
+        $hargaGrosir = $produk->harga_grosir;
     }
+
+    // Pastikan harga grosir adalah float
+    $hargaGrosir = (float) $hargaGrosir;
+
+    return [
+        $this->rowNumber,
+        $produk->kode_produk,
+        $produk->nama_produk,
+        $produk->kategori->nama_kategori ?? 'Tidak Diketahui',
+        $produk->merk,
+        format_uang_excel($produk->harga_beli),
+        format_uang_excel($produk->harga_jual),
+        format_uang_excel($hargaGrosir), // Menggunakan harga grosir yang sudah diproses
+        $produk->stok,
+    ];
+}
+
 
 
     public function styles(Worksheet $sheet)

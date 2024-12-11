@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Pembelian;
-use App\Models\Pengeluaran;
-use App\Models\Penjualan;
-use Illuminate\Http\Request;
 use PDF;
+use App\Models\Setting;
+use App\Models\Pembelian;
+use App\Models\Penjualan;
+use App\Models\Pengeluaran;
+use Illuminate\Http\Request;
 
 class LaporanController extends Controller
 {
@@ -43,7 +44,6 @@ class LaporanController extends Controller
             $row['DT_RowIndex'] = $no++;
             $row['tanggal'] = tanggal_indonesia($tanggal, false);
             $row['penjualan'] = format_uang($total_penjualan);
-
             $row['pendapatan'] = format_uang($pendapatan);
 
             $data[] = $row;
@@ -51,7 +51,7 @@ class LaporanController extends Controller
 
         $data[] = [
             'DT_RowIndex' => '',
-            'tanggal' => '',
+            'tanggal' => 'Total',
             'penjualan' => '',
 
             'pendapatan' => format_uang($total_pendapatan),
@@ -71,10 +71,17 @@ class LaporanController extends Controller
 
     public function exportPDF($awal, $akhir)
     {
+        // Ambil data laporan
         $data = $this->getData($awal, $akhir);
-        $pdf  = PDF::loadView('laporan.pdf', compact('awal', 'akhir', 'data'));
-        $pdf->setPaper('a4', 'potrait');
-        
-        return $pdf->stream('Laporan-pendapatan-'. date('Y-m-d-his') .'.pdf');
+
+        // Ambil data setting (misalnya, logo, alamat, nama_perusahaan)
+        $setting = Setting::first(); // Pastikan Anda memiliki model Setting yang sesuai
+
+        // Buat PDF
+        $pdf = PDF::loadView('laporan.pdf', compact('awal', 'akhir', 'data', 'setting'));
+        $pdf->setPaper('a4', 'portrait');
+
+        // Stream atau unduh file PDF
+        return $pdf->stream('Laporan-pendapatan-' . date('Y-m-d-his') . '.pdf');
     }
 }

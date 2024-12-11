@@ -12,7 +12,34 @@
         body {
             font-family: Arial, sans-serif;
             font-size: 12px;
-            margin: 20px;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header img {
+            width: 100px;
+            height: auto;
+        }
+
+        .header .company-name {
+            text-align: center;
+            flex-grow: 1;
+        }
+
+        .header .address {
+            text-align: right;
+        }
+
+        .header h2,
+        .header p {
+            margin: 0;
         }
 
         h3,
@@ -53,10 +80,34 @@
             margin-top: 20px;
             font-size: 10px;
         }
+
+        .hr-line {
+            border-top: 2px solid #000;
+            margin: 20px 30px;
+        }
     </style>
 </head>
 
 <body>
+
+    <!-- Header Section: Logo, Company Name, and Address -->
+    <div class="header">
+        <!-- Logo Perusahaan di kiri -->
+
+        <!-- Nama Perusahaan di tengah -->
+        <div class="company-name">
+            <h2>{{ $setting->nama_perusahaan }}</h2>
+        </div>
+
+        <!-- Alamat Perusahaan di kanan -->
+        <div class="address">
+            <p>{{ $setting->alamat }}</p>
+        </div>
+    </div>
+
+    <!-- Garis pemisah -->
+    <div class="hr-line"></div>
+
     <h3>Laporan Pendapatan</h3>
     <h4>
         Tanggal {{ tanggal_indonesia($awal, false) }}
@@ -78,13 +129,22 @@
             <tr>
                 <td>{{ $index + 1 }}</td>
                 <td>{{ $row['tanggal'] }}</td>
-                <td>{{ number_format(floatval($row['penjualan']), 0, ',', '.') }}</td>
-                <td>{{ number_format(floatval($row['pendapatan']), 0, ',', '.') }}</td>
-
+                <td>
+                    {{ $row['penjualan'] == 0 ? '0' : number_format(floatval($row['penjualan']), 3, ',', '.') }}
+                </td>
+                <td>
+                    {{ $row['pendapatan'] == 0 ? '0' : number_format(floatval($row['pendapatan']), 3, ',', '.') }}
+                </td>
             </tr>
             @endforeach
         </tbody>
     </table>
+
+    <!-- Footer Section -->
+    <div class="footer">
+        <p>Dicetak pada: {{ now()->format('d-m-Y H:i') }}</p>
+    </div>
+
 </body>
 
 </html>

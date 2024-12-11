@@ -56,9 +56,45 @@ class DashboardController extends Controller
         return datatables()
             ->of($produk)
             ->addIndexColumn()
-            ->rawColumns(['aksi'])
+            ->addColumn('harga_grosir', function ($produk) {
+                // Periksa apakah harga_grosir adalah array atau string JSON
+                $hargaGrosir = '';
+
+                // Jika harga_grosir adalah string, coba decode JSON
+                if (is_string($produk->harga_grosir)) {
+                    $hargaGrosir = json_decode($produk->harga_grosir, true);
+                } else {
+                    // Jika harga_grosir sudah berupa array
+                    $hargaGrosir = $produk->harga_grosir;
+                }
+
+                // Jika hasil decode atau harga_grosir sudah array, ambil harga dan jenisnya
+                if (is_array($hargaGrosir)) {
+                    // Ambil harga dan jenis dari array
+                    $harga = $hargaGrosir['harga'] ?? 0;  // Ambil harga, jika tidak ada set 0
+                    $jenis = $hargaGrosir['jenis'] ?? '';  // Ambil jenis, jika tidak ada set kosong
+                } else {
+                    // Jika tidak ada data harga, set default
+                    $harga = 0;
+                    $jenis = '';
+                }
+
+                // Tentukan jenis harga grosir
+                $jenisHarga = '';
+                if ($jenis == 'lusin') {
+                    $jenisHarga = 'Lusin';
+                } elseif ($jenis == 'setengah_lusin') {
+                    $jenisHarga = 'Setengah Lusin';
+                }
+
+                // Format output: "harga/jenis"
+                $hargaFormat = format_uang($harga); // Pastikan fungsi format_uang() sudah ada
+                return "{$hargaFormat}/{$jenisHarga}"; // Gabungkan harga dan jenis
+            })
+            ->rawColumns(['harga_grosir'])  // Pastikan kolom harga grosir bisa diproses sebagai HTML
             ->make(true);
     }
+
 
     public function store(Request $request)
     {

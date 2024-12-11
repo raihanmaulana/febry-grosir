@@ -64,10 +64,19 @@
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label for="harga_grosir" class="col-lg-2 col-lg-offset-1 control-label">Harga Grosir</label>
+                        <label for="harga_grosir_jenis" class="col-lg-2 col-lg-offset-1 control-label">Jenis Harga Grosir</label>
                         <div class="col-lg-6">
-                            <input type="number" name="harga_grosir" id="harga_grosir" class="form-control" required>
+                            <select name="harga_grosir[jenis]" id="harga_grosir_jenis" class="form-control" required>
+                                <option value="lusin">Lusin</option>
+                                <option value="setengah_lusin">Setengah Lusin</option>
+                            </select>
                             <span class="help-block with-errors"></span>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="harga_grosir_harga" class="col-lg-2 col-lg-offset-1 control-label">Harga Grosir</label>
+                        <div class="col-lg-6">
+                            <input type="number" name="harga_grosir[harga]" id="harga_grosir_harga" class="form-control" required>
                         </div>
                     </div>
                     <div class="form-group row">
@@ -80,7 +89,7 @@
                     <div class="form-group row">
                         <label for="keterangan" class="col-lg-2 col-lg-offset-1 control-label">Keterangan</label>
                         <div class="col-lg-6">
-                            <input type="text" name="keterangan" id="keterangan" class="form-control" required autofocus>
+                            <input type="text" name="keterangan" id="keterangan" class="form-control" autofocus>
                             <span class="help-block with-errors"></span>
                         </div>
                     </div>
@@ -153,5 +162,17 @@
                 }
             });
         });
+    });
+
+    document.getElementById('harga_grosir_jenis').addEventListener('change', function() {
+        const jenis = this.value;
+        const hargaInput = document.getElementById('harga_grosir');
+
+        // Anda bisa menyesuaikan logika jika ingin memberi peringatan atau informasi lainnya
+        if (jenis === 'lusin') {
+            hargaInput.setAttribute('placeholder', 'Masukkan harga per lusin');
+        } else if (jenis === 'setengah_lusin') {
+            hargaInput.setAttribute('placeholder', 'Masukkan harga per setengah lusin');
+        }
     });
 </script>

@@ -13,6 +13,10 @@ class Produk extends Model
     protected $primaryKey = 'id_produk';
     protected $guarded = [];
 
+    protected $casts = [
+        'harga_grosir' => 'array', // Mengubah harga_grosir menjadi array otomatis saat mengambil data
+    ];
+
     public function kategori()
     {
         return $this->belongsTo(Kategori::class, 'id_kategori');

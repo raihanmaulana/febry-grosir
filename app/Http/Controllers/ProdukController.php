@@ -56,7 +56,40 @@ class ProdukController extends Controller
                 return format_uang($produk->harga_jual);
             })
             ->addColumn('harga_grosir', function ($produk) {
-                return format_uang($produk->harga_grosir);
+                // Periksa apakah harga_grosir adalah string JSON
+                if (is_string($produk->harga_grosir)) {
+                    // Jika harga_grosir adalah string JSON, coba decode
+                    $hargaGrosir = json_decode($produk->harga_grosir, true);
+                } else {
+                    // Jika harga_grosir sudah berupa array, langsung gunakan sebagai array
+                    $hargaGrosir = $produk->harga_grosir;
+                }
+
+                // Jika hasil decode adalah array atau sudah array, ambil nilai 'harga' dan 'jenis'
+                if (is_array($hargaGrosir)) {
+                    // Ambil harga dari array (misalnya '442')
+                    $harga = $hargaGrosir['harga'] ?? 0; // Gunakan nilai default 0 jika 'harga' tidak ada
+                    // Ambil jenis dari array (misalnya 'lusin' atau 'setengah_lusin')
+                    $jenis = $hargaGrosir['jenis'] ?? ''; // Jika tidak ada jenis, kosongkan
+                } else {
+                    // Jika tidak ada data harga, anggap harga adalah 0
+                    $harga = 0;
+                    $jenis = '';
+                }
+
+                // Tentukan jenis harga grosir
+                $jenisHarga = '';
+                if ($jenis == 'lusin') {
+                    $jenisHarga = 'Lusin';
+                } elseif ($jenis == 'setengah_lusin') {
+                    $jenisHarga = 'Setengah Lusin';
+                }
+
+                // Format output: "harga/jenis"
+                $hargaFormat = format_uang($harga); // Format harga dalam bentuk uang
+                $output = "{$hargaFormat}/{$jenisHarga}"; // Gabungkan harga dan jenis
+
+                return $output; // Menampilkan harga grosir dengan format "harga/jenis"
             })
             ->addColumn('stok', function ($produk) {
                 return format_uang($produk->stok);
@@ -102,8 +135,14 @@ class ProdukController extends Controller
             // Data pengguna yang ditambahkan
             $request['added_by'] = Auth::id();
 
+            // Pastikan harga_grosir yang dikirimkan adalah array
+            $hargaGrosir = $request->input('harga_grosir', []);
+
             // Simpan produk, validasi akan dilakukan di model
-            $produk = Produk::create($request->all());
+            $produk = Produk::create([
+                ...$request->all(),
+                'harga_grosir' => json_encode($hargaGrosir) // Menyimpan harga grosir sebagai JSON string
+            ]);
 
             DB::commit();
 
@@ -130,8 +169,15 @@ class ProdukController extends Controller
     {
         $produk = Produk::find($id);
 
+        // Mengecek apakah harga grosir adalah JSON dan memparsingnya jika perlu
+        if (is_string($produk->harga_grosir)) {
+            // Coba untuk memparsing harga grosir jika berupa string JSON
+            $produk->harga_grosir = json_decode($produk->harga_grosir, true);
+        }
+
         return response()->json($produk);
     }
+
 
     /**
      * Show the form for editing the specified resource.

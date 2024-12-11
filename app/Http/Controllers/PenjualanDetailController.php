@@ -120,15 +120,36 @@ class PenjualanDetailController extends Controller
             return response()->json('Produk tidak ditemukan', 404);
         }
 
+        // Cek apakah harga_grosir adalah array atau string
+        if (is_string($produk->harga_grosir)) {
+            // Jika harga_grosir adalah string, coba decode JSON
+            $hargaGrosir = json_decode($produk->harga_grosir, true);
+
+            // Jika decode berhasil dan menjadi array, ambil harga dari JSON
+            if (json_last_error() === JSON_ERROR_NONE && is_array($hargaGrosir)) {
+                $hargaGrosirValue = $hargaGrosir['harga'] ?? 0;
+            } else {
+                // Jika tidak JSON yang valid, anggap harga_grosir adalah nilai langsung
+                $hargaGrosirValue = $produk->harga_grosir;
+            }
+        } elseif (is_array($produk->harga_grosir)) {
+            // Jika harga_grosir sudah berupa array, langsung ambil nilai harga
+            $hargaGrosirValue = $produk->harga_grosir['harga'] ?? 0;
+        } else {
+            // Jika harga_grosir tidak berformat array atau string, set nilai default
+            $hargaGrosirValue = 0;
+        }
+
+        // Buat objek PenjualanDetail
         $detail = new PenjualanDetail();
         $detail->id_penjualan = $request->id_penjualan;
         $detail->id_produk = $produk->id_produk;
         $detail->harga_jual = $produk->harga_jual;
         $detail->harga_jual_asli = $produk->harga_jual;
-        $detail->harga_grosir = $produk->harga_grosir;
+        $detail->harga_grosir = $hargaGrosirValue; // Simpan harga grosir
         $detail->jumlah = 1; // Default jumlah 1
-        $detail->diskon_persen = $request->diskon_persen ?? 0; // Input manual diskon persen
-        $detail->diskon_rupiah = $request->diskon_rupiah ?? 0; // Input manual diskon rupiah
+        $detail->diskon_persen = $request->diskon_persen ?? 0; // Diskon persen
+        $detail->diskon_rupiah = $request->diskon_rupiah ?? 0; // Diskon rupiah
 
         // Hitung subtotal
         $subtotal = $produk->harga_jual;

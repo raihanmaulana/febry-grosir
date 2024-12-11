@@ -11,7 +11,7 @@
                     <h4 class="modal-title"></h4>
                 </div>
                 <div class="modal-body">
-                <div class="form-group row">
+                    <div class="form-group row">
                         <label for="kode_produk" class="col-lg-2 col-lg-offset-1 control-label">Kode Produk</label>
                         <div class="col-lg-6">
                             <input type="text" name="kode_produk" id="kode_produk" class="form-control">
@@ -25,7 +25,7 @@
                             <span class="help-block with-errors"></span>
                         </div>
                     </div>
-                     <div class="form-group flex row align-item-center">
+                    <div class="form-group flex row align-item-center">
                         <label for="id_kategori" class="col-lg-2 col-lg-offset-1 control-label">Kategori</label>
                         <div class="col-lg-4">
                             <select name="id_kategori" id="id_kategori" class="form-control" required>
@@ -57,10 +57,19 @@
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label for="harga_grosir" class="col-lg-2 col-lg-offset-1 control-label">Harga Grosir</label>
+                        <label for="harga_grosir_jenis" class="col-lg-2 col-lg-offset-1 control-label">Jenis Harga Grosir</label>
                         <div class="col-lg-6">
-                            <input type="number" name="harga_grosir" id="harga_grosir" class="form-control" required>
+                            <select name="harga_grosir[jenis]" id="harga_grosir_jenis" class="form-control" required>
+                                <option value="lusin">Lusin</option>
+                                <option value="setengah_lusin">Setengah Lusin</option>
+                            </select>
                             <span class="help-block with-errors"></span>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="harga_grosir_harga" class="col-lg-2 col-lg-offset-1 control-label">Harga Grosir</label>
+                        <div class="col-lg-6">
+                            <input type="number" name="harga_grosir[harga]" id="harga_grosir_harga" class="form-control" required>
                         </div>
                     </div>
                     <div class="form-group row">

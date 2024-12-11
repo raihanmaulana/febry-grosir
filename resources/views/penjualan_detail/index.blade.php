@@ -141,6 +141,7 @@ input:checked + .slider:before {
                         <th width="5%">No</th>
                         <th>Kode</th>
                         <th>Nama</th>
+                        <th>Harga</th>
                         <th>Harga Jual</th>
                         <th>Harga Grosir</th>
                         <th>Grosir</th>
@@ -217,17 +218,18 @@ input:checked + .slider:before {
                                 </div>
                             </div>
 
-                            <div class="form-group row">
-                                <label for="keterangan" class="col-lg-2 control-label">Keterangan</label>
-                                <div class="col-lg-8">
-                                    <input type="text" id="keterangan" name="keterangan" class="form-control" value="{{ old('keterangan', $penjualan->keterangan ?? '') }}">
-                                </div>
-                            </div>
 
                             <div class="form-group row">
                                 <label for="kembali" class="col-lg-2 control-label">Kembali</label>
                                 <div class="col-lg-8">
                                     <input type="text" id="kembali" name="kembali" class="form-control" value="0" readonly>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group row">
+                                <label for="keterangan" class="col-lg-2 control-label">Keterangan`</label>
+                                <div class="col-lg-8">
+                                    <input type="text" id="keterangan" name="keterangan" class="form-control" value="{{ old('keterangan', $penjualan->keterangan ?? '') }}">
                                 </div>
                             </div>
 
@@ -277,6 +279,9 @@ input:checked + .slider:before {
                     },
                     {
                         data: 'harga_jual'
+                    },
+                    {
+                        data: 'harga_jual_asli'
                     },
                     {
                         data: 'harga_grosir'

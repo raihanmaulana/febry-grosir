@@ -1,12 +1,12 @@
 @extends('layouts.master')
 
 @section('title')
-    Daftar Produk
+Daftar Produk
 @endsection
 
 @section('breadcrumb')
-    @parent
-    <li class="active">Daftar Produk</li>
+@parent
+<li class="active">Daftar Produk</li>
 @endsection
 
 @section('content')
@@ -19,7 +19,7 @@
                     <button onclick="deleteSelected('{{ route('produk.delete_selected') }}')" class="btn btn-danger btn-xs btn-flat"><i class="fa fa-trash"></i> Hapus</button>
                     <button onclick="cetakBarcode('{{ route('produk.cetak_barcode') }}')" class="btn btn-info btn-xs btn-flat"><i class="fa fa-barcode"></i> Cetak Barcode</button>
                     <a href="{{ route('produk.exportExcel') }}" class="btn btn-warning btn-xs btn-flat">
-                    <i class="fa fa-file-pdf-o"></i> Export Excel
+                        <i class="fa fa-file-pdf-o"></i> Export Excel
                     </a>
                 </div>
             </div>
@@ -58,32 +58,63 @@
 <script>
     let table;
 
-    $(function () {
+    $(function() {
         table = $('.table').DataTable({
             processing: true,
             autoWidth: false,
             ajax: {
-                url: '{{ route('produk.data') }}',
+                url: "{{ route('produk.data') }}",
             },
-            columns: [
-                {data: 'select_all', searchable: false, sortable: false},
-                {data: 'DT_RowIndex', searchable: false, sortable: false},
-                {data: 'kode_produk'},
-                {data: 'nama_produk'},
-                {data: 'nama_kategori'},
-                {data: 'merk'},
-                {data: 'harga_beli'},
-                {data: 'harga_jual'},
-                {data: 'harga_grosir'},
-                {data: 'stok'},
-                {data: 'keterangan'},
-                {data: 'added_by'},
-                {data: 'aksi', searchable: false, sortable: false},
+            columns: [{
+                    data: 'select_all',
+                    searchable: false,
+                    sortable: false
+                },
+                {
+                    data: 'DT_RowIndex',
+                    searchable: false,
+                    sortable: false
+                },
+                {
+                    data: 'kode_produk'
+                },
+                {
+                    data: 'nama_produk'
+                },
+                {
+                    data: 'nama_kategori'
+                },
+                {
+                    data: 'merk'
+                },
+                {
+                    data: 'harga_beli'
+                },
+                {
+                    data: 'harga_jual'
+                },
+                {
+                    data: 'harga_grosir'
+                },
+                {
+                    data: 'stok'
+                },
+                {
+                    data: 'keterangan'
+                },
+                {
+                    data: 'added_by'
+                },
+                {
+                    data: 'aksi',
+                    searchable: false,
+                    sortable: false
+                },
             ]
         });
 
-        $('#modal-form').validator().on('submit', function (e) {
-            if (! e.preventDefault()) {
+        $('#modal-form').validator().on('submit', function(e) {
+            if (!e.preventDefault()) {
                 $.post($('#modal-form form').attr('action'), $('#modal-form form').serialize())
                     .done((response) => {
                         $('#modal-form').modal('hide');
@@ -96,7 +127,7 @@
             }
         });
 
-        $('[name=select_all]').on('click', function () {
+        $('[name=select_all]').on('click', function() {
             $(':checkbox').prop('checked', this.checked);
         });
     });
@@ -121,20 +152,34 @@
         $('#modal-form [name=nama_produk]').focus();
 
         $.get(url)
-            .done((response) => {
-                $('#modal-form [name=nama_produk]').val(response.nama_produk);
-                $('#modal-form [name=id_kategori]').val(response.id_kategori);
-                $('#modal-form [name=merk]').val(response.merk);
-                $('#modal-form [name=harga_beli]').val(response.harga_beli);
-                $('#modal-form [name=harga_jual]').val(response.harga_jual);
-                $('#modal-form [name=harga_grosir]').val(response.harga_grosir);
-                $('#modal-form [name=stok]').val(response.stok);
-            })
-            .fail((errors) => {
-                alert('Tidak dapat menampilkan data');
-                return;
-            });
+    .done((response) => {
+        console.log(response);
+        $('#modal-form [name=kode_produk]').val(response.kode_produk);
+        $('#modal-form [name=nama_produk]').val(response.nama_produk);
+        $('#modal-form [name=id_kategori]').val(response.id_kategori);
+        $('#modal-form [name=merk]').val(response.merk);
+        $('#modal-form [name=harga_beli]').val(response.harga_beli);
+        $('#modal-form [name=harga_jual]').val(response.harga_jual);
+        $('#modal-form [name=stok]').val(response.stok);
+        $('#modal-form [name=keterangan]').val(response.keterangan);
+
+        // Menangani data harga_grosir
+        if (response.harga_grosir && typeof response.harga_grosir === 'object') {
+            const jenis = response.harga_grosir.jenis;
+            const harga = response.harga_grosir.harga;
+
+            // Menetapkan nilai untuk elemen select dan input number
+            $('#harga_grosir_jenis').val(jenis); // Menetapkan jenis harga grosir
+            $('#harga_grosir_harga').val(harga); // Menetapkan harga grosir
+        }
+    })
+    .fail((errors) => {
+        alert('Tidak dapat menampilkan data');
+        return;
+    });
+
     }
+
 
     function deleteData(url) {
         if (confirm('Yakin ingin menghapus data terpilih?')) {

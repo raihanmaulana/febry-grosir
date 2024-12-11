@@ -121,6 +121,7 @@
 
     <p class="text-center">===================================</p>
     <p class="text-center">{{ ($setting->keterangan_struk) }}</p>
+    <p class="text-center" style="text-transform: uppercase;">{{ ($setting->nama_perusahaan) }}</p>
 
     <script>
         let body = document.body;

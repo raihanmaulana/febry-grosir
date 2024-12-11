@@ -28,12 +28,32 @@
                                 <td width="5%">{{ $key+1 }}</td>
                                 <td><span class="label label-success">{{ $item->kode_produk }}</span></td>
                                 <td>{{ $item->nama_produk }}</td>
-                                <td>{{ $item->harga_jual }}</td>
-                                <td>{{ $item->harga_grosir }}</td>
+                                <td>{{ format_uang($item->harga_jual) }}</td>
+                                <td>
+    @php
+    // Periksa apakah harga_grosir adalah string JSON dan decode jika perlu
+    $hargaGrosirValue = 0; // Default value jika tidak ada harga
+
+    // Jika harga_grosir adalah string, coba decode JSON
+    if (is_string($item->harga_grosir)) {
+        $hargaGrosir = json_decode($item->harga_grosir, true);
+        // Jika decode berhasil dan menjadi array, ambil nilai harga
+        if (json_last_error() === JSON_ERROR_NONE && is_array($hargaGrosir)) {
+            $hargaGrosirValue = $hargaGrosir['harga'] ?? 0;
+        }
+    } elseif (is_array($item->harga_grosir)) {
+        // Jika sudah array, langsung ambil nilai harga dari array
+        $hargaGrosirValue = $item->harga_grosir['harga'] ?? 0;
+    }
+
+    @endphp
+    {{ format_uang($hargaGrosirValue) }} <!-- Tampilkan harga grosir dalam format uang -->
+</td>
+
                                 <td>{{ $item->stok }}</td>
                                 <td>
                                     <a href="#" class="btn btn-primary btn-xs btn-flat"
-                                       onclick="pilihProduk('{{ $item->id_produk }}', '{{ $item->kode_produk }}')">
+                                        onclick="pilihProduk('{{ $item->id_produk }}', '{{ $item->kode_produk }}')">
                                         <i class="fa fa-check-circle"></i> Pilih
                                     </a>
                                 </td>

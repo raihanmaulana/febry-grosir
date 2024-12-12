@@ -76,6 +76,8 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('penjualan/export-pdf', function () {
             return app(PenjualanController::class)->exportPdf();
         })->name('penjualan.exportPdf');
+        Route::get('/penjualan/export-pdf-periode', [PenjualanController::class, 'exportPdfPeriode'])->name('penjualan.exportPdfPeriode');
+        Route::get('/penjualan/export-excel-periode', [PenjualanController::class, 'exportExcelPeriode'])->name('penjualan.exportExcelPeriode');
         Route::get('/penjualan/export-excel', [PenjualanController::class, 'exportExcel'])->name('penjualan.exportExcel');
         Route::get('/penjualan/{id}', [PenjualanController::class, 'show'])->name('penjualan.show');
         Route::delete('/penjualan/{id}', [PenjualanController::class, 'destroy'])->name('penjualan.destroy');
@@ -110,6 +112,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
         Route::get('/laporan/data/{awal}/{akhir}', [LaporanController::class, 'data'])->name('laporan.data');
         Route::get('/laporan/pdf/{awal}/{akhir}', [LaporanController::class, 'exportPDF'])->name('laporan.export_pdf');
+        Route::get('/laporan/export-excel/{awal}/{akhir}', [LaporanController::class, 'exportExcel'])->name('laporan.export_excel');
 
         Route::get('/user/data', [UserController::class, 'data'])->name('user.data');
         Route::resource('/user', UserController::class);

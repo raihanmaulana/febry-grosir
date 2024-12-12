@@ -10,6 +10,14 @@ function format_uang_excel($angka)
     return 'Rp ' . number_format($angka, 2, ',', '.'); // 2 decimal places, comma for decimal, dot for thousand separator
 }
 
+function format_uang_pdf($angka)
+{
+    // Pastikan angka adalah float atau integer
+    $angka = (float)$angka;
+
+    // Format angka dengan pemisah ribuan
+    return number_format($angka, 0, ',', '.');
+}
 
 function terbilang($angka)
 {

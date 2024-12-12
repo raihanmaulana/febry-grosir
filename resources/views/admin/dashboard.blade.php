@@ -47,7 +47,7 @@
             <div class="inner">
                 <h3>{{ $penjualan }}</h3>
 
-                <p>Penjualan</p>
+                <p>Total Penjualan</p>
             </div>
             <div class="icon">
                 <i class="fa fa-dollar-sign"></i>
@@ -56,7 +56,23 @@
         </div>
     </div>
     <!-- ./col -->
+    <div class="col-lg-3 col-xs-6">
+        <!-- small box for total sales today -->
+        <div class="small-box bg-yellow">
+            <div class="inner">
+                <h3>{{ format_uang($total_penjualan_hari_ini) }}</h3>
+
+                <p>Total Penjualan Hari Ini</p>
+            </div>
+            <div class="icon">
+                <i class="fa fa-calendar-day"></i>
+            </div>
+            <a href="{{ route('penjualan.index') }}" class="small-box-footer">Lihat <i class="fa fa-arrow-circle-right"></i></a>
+        </div>
+    </div>
+    <!-- ./col -->
 </div>
+
 <!-- /.row -->
 <!-- Main row -->
 <div class="row">

@@ -1,21 +1,26 @@
 @extends('layouts.master')
 
 @section('title')
-    Daftar Kategori
+Daftar Kategori
 @endsection
 
 @section('breadcrumb')
-    @parent
-    <li class="active">Daftar Kategori</li>
+@parent
+<li class="active">Daftar Kategori</li>
 @endsection
-
+<link rel="stylesheet" href="{{ asset('css/button.css') }}">
 @section('content')
 <div class="row">
     <div class="col-lg-12">
         <div class="box">
             <div class="box-header with-border">
-                <button onclick="addForm('{{ route('kategori.store') }}')" class="btn btn-success btn-xs btn-flat"><i class="fa fa-plus-circle"></i> Tambah</button>
+                <div class="button-container">
+                    <button onclick="addForm('{{ route('kategori.store') }}')" class="btn btn-success">
+                        <i class="fa fa-plus-circle"></i> Tambah
+                    </button>
+                </div>
             </div>
+
             <div class="box-body table-responsive">
                 <table class="table table-stiped table-bordered">
                     <thead>
@@ -36,22 +41,31 @@
 <script>
     let table;
 
-    $(function () {
+    $(function() {
         table = $('.table').DataTable({
             processing: true,
             autoWidth: false,
             ajax: {
-                url: '{{ route('kategori.data') }}',
+                url: "{{ route('kategori.data') }}",
             },
-            columns: [
-                {data: 'DT_RowIndex', searchable: false, sortable: false},
-                {data: 'nama_kategori'},
-                {data: 'aksi', searchable: false, sortable: false},
+            columns: [{
+                    data: 'DT_RowIndex',
+                    searchable: false,
+                    sortable: false
+                },
+                {
+                    data: 'nama_kategori'
+                },
+                {
+                    data: 'aksi',
+                    searchable: false,
+                    sortable: false
+                },
             ]
         });
 
-        $('#modal-form').validator().on('submit', function (e) {
-            if (! e.preventDefault()) {
+        $('#modal-form').validator().on('submit', function(e) {
+            if (!e.preventDefault()) {
                 $.post($('#modal-form form').attr('action'), $('#modal-form form').serialize())
                     .done((response) => {
                         $('#modal-form').modal('hide');

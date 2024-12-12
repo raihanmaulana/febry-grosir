@@ -69,6 +69,7 @@
                             <select name="harga_grosir[jenis]" id="harga_grosir_jenis" class="form-control" required>
                                 <option value="lusin">Lusin</option>
                                 <option value="setengah_lusin">Setengah Lusin</option>
+                                <option value="pcs">Pcs</option>
                             </select>
                             <span class="help-block with-errors"></span>
                         </div>

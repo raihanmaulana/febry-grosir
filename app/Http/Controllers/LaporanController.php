@@ -8,6 +8,8 @@ use App\Models\Pembelian;
 use App\Models\Penjualan;
 use App\Models\Pengeluaran;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\LaporanExport;
 
 class LaporanController extends Controller
 {
@@ -35,30 +37,34 @@ class LaporanController extends Controller
             $tanggal = $awal;
             $awal = date('Y-m-d', strtotime("+1 day", strtotime($awal)));
 
+            // Ambil total penjualan untuk tanggal tertentu
             $total_penjualan = Penjualan::where('created_at', 'LIKE', "%$tanggal%")->sum('bayar');
 
-            $pendapatan = $total_penjualan;
+            // Pastikan total_penjualan adalah angka yang benar
+            $pendapatan = (float)$total_penjualan; // Ubah menjadi float agar tidak ada masalah format
             $total_pendapatan += $pendapatan;
 
             $row = array();
             $row['DT_RowIndex'] = $no++;
             $row['tanggal'] = tanggal_indonesia($tanggal, false);
-            $row['penjualan'] = format_uang($total_penjualan);
-            $row['pendapatan'] = format_uang($pendapatan);
+
+            // Format angka untuk pendapatan
+            $row['pendapatan'] = format_uang_pdf($pendapatan);
 
             $data[] = $row;
         }
 
+        // Menambahkan total pendapatan di akhir
         $data[] = [
             'DT_RowIndex' => '',
             'tanggal' => 'Total',
             'penjualan' => '',
-
-            'pendapatan' => format_uang($total_pendapatan),
+            'pendapatan' => format_uang_pdf($total_pendapatan), // Format total pendapatan
         ];
 
         return $data;
     }
+
 
     public function data($awal, $akhir)
     {
@@ -84,4 +90,15 @@ class LaporanController extends Controller
         // Stream atau unduh file PDF
         return $pdf->stream('Laporan-pendapatan-' . date('Y-m-d-his') . '.pdf');
     }
+
+
+
+    public function exportExcel($awal, $akhir)
+{
+    // Mengambil data laporan
+    $data = $this->getData($awal, $akhir);
+
+    // Ekspor ke Excel
+    return Excel::download(new LaporanExport($data), 'Laporan-pendapatan-' . date('Y-m-d-his') . '.xlsx');
+}
 }

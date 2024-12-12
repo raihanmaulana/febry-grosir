@@ -120,7 +120,6 @@
             <tr>
                 <th width="5%">No</th>
                 <th>Tanggal</th>
-                <th>Penjualan</th>
                 <th>Pendapatan</th>
             </tr>
         </thead>
@@ -130,10 +129,7 @@
                 <td>{{ $index + 1 }}</td>
                 <td>{{ $row['tanggal'] }}</td>
                 <td>
-                    {{ $row['penjualan'] == 0 ? '0' : number_format(floatval($row['penjualan']), 3, ',', '.') }}
-                </td>
-                <td>
-                    {{ $row['pendapatan'] == 0 ? '0' : number_format(floatval($row['pendapatan']), 3, ',', '.') }}
+                    {{ $row['pendapatan'] == 0 ? '0' : $row['pendapatan'] }}
                 </td>
             </tr>
             @endforeach

@@ -8,18 +8,24 @@ Daftar Produk
 @parent
 <li class="active">Daftar Produk</li>
 @endsection
-
+<link rel="stylesheet" href="{{ asset('css/button.css') }}">
 @section('content')
 <div class="row">
     <div class="col-lg-12">
         <div class="box">
             <div class="box-header with-border">
-                <div class="btn-group">
-                    <button onclick="addForm('{{ route('produk.store') }}')" class="btn btn-success btn-xs btn-flat"><i class="fa fa-plus-circle"></i> Tambah</button>
-                    <button onclick="deleteSelected('{{ route('produk.delete_selected') }}')" class="btn btn-danger btn-xs btn-flat"><i class="fa fa-trash"></i> Hapus</button>
-                    <button onclick="cetakBarcode('{{ route('produk.cetak_barcode') }}')" class="btn btn-info btn-xs btn-flat"><i class="fa fa-barcode"></i> Cetak Barcode</button>
-                    <a href="{{ route('produk.exportExcel') }}" class="btn btn-warning btn-xs btn-flat">
-                        <i class="fa fa-file-pdf-o"></i> Export Excel
+                <div class="button-container">
+                    <button onclick="addForm('{{ route('produk.store') }}')" class="btn btn-success">
+                        <i class="fa fa-plus-circle"></i> Tambah
+                    </button>
+                    <button onclick="deleteSelected('{{ route('produk.delete_selected') }}')" class="btn btn-danger">
+                        <i class="fa fa-trash"></i> Hapus
+                    </button>
+                    <button onclick="cetakBarcode('{{ route('produk.cetak_barcode') }}')" class="btn btn-info">
+                        <i class="fa fa-barcode"></i> Cetak Barcode
+                    </button>
+                    <a href="{{ route('produk.exportExcel') }}" class="btn btn-warning">
+                        <i class="fa fa-file-excel-o"></i> Export Excel
                     </a>
                 </div>
             </div>
@@ -152,31 +158,31 @@ Daftar Produk
         $('#modal-form [name=nama_produk]').focus();
 
         $.get(url)
-    .done((response) => {
-        console.log(response);
-        $('#modal-form [name=kode_produk]').val(response.kode_produk);
-        $('#modal-form [name=nama_produk]').val(response.nama_produk);
-        $('#modal-form [name=id_kategori]').val(response.id_kategori);
-        $('#modal-form [name=merk]').val(response.merk);
-        $('#modal-form [name=harga_beli]').val(response.harga_beli);
-        $('#modal-form [name=harga_jual]').val(response.harga_jual);
-        $('#modal-form [name=stok]').val(response.stok);
-        $('#modal-form [name=keterangan]').val(response.keterangan);
+            .done((response) => {
+                console.log(response);
+                $('#modal-form [name=kode_produk]').val(response.kode_produk);
+                $('#modal-form [name=nama_produk]').val(response.nama_produk);
+                $('#modal-form [name=id_kategori]').val(response.id_kategori);
+                $('#modal-form [name=merk]').val(response.merk);
+                $('#modal-form [name=harga_beli]').val(response.harga_beli);
+                $('#modal-form [name=harga_jual]').val(response.harga_jual);
+                $('#modal-form [name=stok]').val(response.stok);
+                $('#modal-form [name=keterangan]').val(response.keterangan);
 
-        // Menangani data harga_grosir
-        if (response.harga_grosir && typeof response.harga_grosir === 'object') {
-            const jenis = response.harga_grosir.jenis;
-            const harga = response.harga_grosir.harga;
+                // Menangani data harga_grosir
+                if (response.harga_grosir && typeof response.harga_grosir === 'object') {
+                    const jenis = response.harga_grosir.jenis;
+                    const harga = response.harga_grosir.harga;
 
-            // Menetapkan nilai untuk elemen select dan input number
-            $('#harga_grosir_jenis').val(jenis); // Menetapkan jenis harga grosir
-            $('#harga_grosir_harga').val(harga); // Menetapkan harga grosir
-        }
-    })
-    .fail((errors) => {
-        alert('Tidak dapat menampilkan data');
-        return;
-    });
+                    // Menetapkan nilai untuk elemen select dan input number
+                    $('#harga_grosir_jenis').val(jenis); // Menetapkan jenis harga grosir
+                    $('#harga_grosir_harga').val(harga); // Menetapkan harga grosir
+                }
+            })
+            .fail((errors) => {
+                alert('Tidak dapat menampilkan data');
+                return;
+            });
 
     }
 

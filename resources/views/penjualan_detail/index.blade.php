@@ -233,6 +233,15 @@ input:checked + .slider:before {
                                 </div>
                             </div>
 
+                            <div class="form-group row">
+    <label for="created_at" class="col-lg-2 control-label">Tanggal Transaksi</label>
+    <div class="col-lg-8">
+        <input type="datetime-local" id="created_at" name="created_at" class="form-control"
+               value="{{ old('created_at', \Carbon\Carbon::now()->format('Y-m-d\TH:i')) }}">
+    </div>
+</div>
+
+
                             <div class="box-footer">
                                 <button type="submit" class="btn btn-primary btn-sm btn-flat pull-right btn-simpan"><i class="fa fa-floppy-o"></i> Simpan Transaksi</button>
                             </div>

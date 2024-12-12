@@ -16,38 +16,42 @@ use Illuminate\Support\Facades\Auth;
 class DashboardController extends Controller
 {
     public function index()
-    {
-        $kategori = Kategori::count();
-        $kategoriProduk = Kategori::all()->pluck('nama_kategori', 'id_kategori');
-        $produk = Produk::count();
-        $penjualan = Penjualan::count();
-        $member = Member::count();
+{
+    $kategori = Kategori::count();
+    $kategoriProduk = Kategori::all()->pluck('nama_kategori', 'id_kategori');
+    $produk = Produk::count();
+    $penjualan = Penjualan::count();
+    $member = Member::count();
 
-        $tanggal_awal = date('Y-m-01');
-        $tanggal_akhir = date('Y-m-d');
+    $tanggal_awal = date('Y-m-01');
+    $tanggal_akhir = date('Y-m-d');
 
-        $data_tanggal = array();
-        $data_pendapatan = array();
+    $data_tanggal = array();
+    $data_pendapatan = array();
 
-        while (strtotime($tanggal_awal) <= strtotime($tanggal_akhir)) {
-            $data_tanggal[] = (int) substr($tanggal_awal, 8, 2);
+    // Total Penjualan Hari Ini
+    $total_penjualan_hari_ini = Penjualan::whereDate('created_at', today())->sum('bayar');
 
-            $total_penjualan = Penjualan::where('created_at', 'LIKE', "%$tanggal_awal%")->sum('bayar');
-            $total_pembelian = Pembelian::where('created_at', 'LIKE', "%$tanggal_awal%")->sum('bayar');
-            $total_pengeluaran = Pengeluaran::where('created_at', 'LIKE', "%$tanggal_awal%")->sum('nominal');
+    while (strtotime($tanggal_awal) <= strtotime($tanggal_akhir)) {
+        $data_tanggal[] = (int) substr($tanggal_awal, 8, 2);
 
-            $pendapatan = $total_penjualan - $total_pembelian - $total_pengeluaran;
-            $data_pendapatan[] += $pendapatan;
+        $total_penjualan = Penjualan::where('created_at', 'LIKE', "%$tanggal_awal%")->sum('bayar');
+        $total_pembelian = Pembelian::where('created_at', 'LIKE', "%$tanggal_awal%")->sum('bayar');
+        $total_pengeluaran = Pengeluaran::where('created_at', 'LIKE', "%$tanggal_awal%")->sum('nominal');
 
-            $tanggal_awal = date('Y-m-d', strtotime("+1 day", strtotime($tanggal_awal)));
-        }
+        $pendapatan = $total_penjualan - $total_pembelian - $total_pengeluaran;
+        $data_pendapatan[] += $pendapatan;
 
-        if (auth()->user()->level == 1) {
-            return view('admin.dashboard', compact('kategori', 'produk', 'penjualan', 'member', 'tanggal_awal', 'tanggal_akhir', 'data_tanggal', 'data_pendapatan'));
-        } else {
-            return view('kasir.dashboard', compact('kategoriProduk'));
-        }
+        $tanggal_awal = date('Y-m-d', strtotime("+1 day", strtotime($tanggal_awal)));
     }
+
+    if (auth()->user()->level == 1) {
+        return view('admin.dashboard', compact('kategori', 'produk', 'penjualan', 'member', 'tanggal_awal', 'tanggal_akhir', 'data_tanggal', 'data_pendapatan', 'total_penjualan_hari_ini'));
+    } else {
+        return view('kasir.dashboard', compact('kategoriProduk'));
+    }
+}
+
 
     public function dataKasir()
     {

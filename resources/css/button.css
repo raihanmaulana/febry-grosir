@@ -1,0 +1,75 @@
+/* Container tombol */
+.button-container {
+    display: flex;
+    /* Mengatur elemen di dalam container menjadi flexbox */
+    flex-wrap: wrap;
+    /* Memungkinkan tombol berpindah ke baris baru jika tidak muat */
+    gap: 10px;
+    /* Jarak antar tombol */
+}
+
+/* Gaya umum untuk tombol */
+.button-container .btn {
+    padding: 10px 15px;
+    /* Ukuran tombol */
+    font-size: 14px;
+    /* Ukuran font */
+    border: none;
+    /* Hilangkan border */
+    cursor: pointer;
+    /* Pointer saat hover */
+    border-radius: 5px;
+    /* Sudut tombol melengkung */
+    text-align: center;
+    /* Teks di tengah */
+}
+
+/* Warna tombol */
+.btn-success {
+    background-color: #28a745;
+    /* Hijau */
+    color: #fff;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    /* Kuning */
+    color: #000;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    /* Biru muda */
+    color: #fff;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    /* Biru */
+    color: #fff;
+}
+
+.btn-danger {
+    background-color: #dc3545; /* Merah */
+    color: #fff;
+}
+
+/* Hover efek */
+.button-container .btn:hover {
+    opacity: 0.9;
+}
+
+/* Responsif untuk perangkat kecil */
+@media (max-width: 768px) {
+    .button-container {
+        flex-direction: column;
+        /* Tombol tersusun vertikal pada layar kecil */
+        align-items: stretch;
+        /* Tombol memenuhi lebar container */
+    }
+
+    .button-container .btn {
+        width: 100%;
+        /* Tombol menjadi full-width */
+    }
+}

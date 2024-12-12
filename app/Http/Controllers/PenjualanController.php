@@ -12,6 +12,7 @@ use App\Exports\PenjualanExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\PenjualanExportExcel;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
+use App\Exports\PenjualanExportPeriodeExcel;
 
 class PenjualanController extends Controller
 {
@@ -136,6 +137,12 @@ class PenjualanController extends Controller
                 'message' => 'Jumlah yang diterima tidak cukup untuk membayar total.'
             ], 400);
         }
+
+        // Mengatur tanggal transaksi, jika tidak ada input created_at, gunakan sekarang
+        $createdAt = $request->input('created_at', Carbon::now()->format('Y-m-d H:i:s'));
+
+        // Pastikan created_at dalam format yang benar
+        $penjualan->created_at = Carbon::parse($createdAt);
 
         // Lanjutkan ke update data penjualan jika validasi lulus
         $penjualan->id_member = $request->id_member;
@@ -328,10 +335,127 @@ class PenjualanController extends Controller
         return $pdf->download('laporan_penjualan.pdf');
     }
 
+    public function exportPdfPeriode(Request $request)
+    {
+        // Ambil parameter tanggal mulai dan tanggal akhir dari request
+        $start_date = $request->get('start_date');
+        $end_date = $request->get('end_date');
+
+        // Validasi jika parameter tanggal tidak ditemukan
+        if (!$start_date || !$end_date) {
+            abort(400, 'Tanggal mulai dan tanggal akhir diperlukan.');
+        }
+
+        // Query untuk mengambil data penjualan dengan relasi penjualan_detail dan produk
+        $penjualan = Penjualan::with(['user', 'penjualanDetail.produk'])->orderBy('id_penjualan', 'desc');
+
+        // Terapkan filter tanggal jika ada
+        $penjualan = $penjualan->whereBetween('created_at', [
+            $start_date . ' 00:00:00',  // Jam mulai
+            $end_date . ' 23:59:59'     // Jam akhir
+        ]);
+
+        // Ambil data penjualan yang sudah difilter
+        $penjualan = $penjualan->get();
+
+        // Mapping data penjualan
+        $data = $penjualan->map(function ($penjualan) {
+            // Ambil nama produk dan jumlah dari penjualan_detail
+            $nama_barang = $penjualan->penjualanDetail->map(function ($detail) {
+                // Pastikan produk ada dan nama produk ditemukan
+                $nama_produk = $detail->produk->nama_produk ?? 'Tidak Diketahui';
+                $jumlah = $detail->jumlah; // Ambil jumlah barang yang dibeli
+                return "{$nama_produk} ({$jumlah})"; // Format Nama Barang (Jumlah)
+            })->implode(', '); // Gabungkan dengan koma
+
+            // Menghitung diskon total dari penjualan_detail (jika ada)
+            $diskon_persen_total = $penjualan->diskon_persen_total ?? 0;
+            $diskon_rupiah_total = $penjualan->diskon_rupiah_total ?? 0;
+
+            // Pastikan semua data yang diperlukan ada
+            return [
+                'id' => $penjualan->id_penjualan,
+                'tanggal' => tanggal_indonesia($penjualan->created_at, false),
+                'total_item' => format_uang($penjualan->total_item),
+                'total_harga' => format_uang($penjualan->total_harga),
+                'diskon_persen_total' => $diskon_persen_total . '%', // Diskon persen
+                'diskon_rupiah_total' => format_uang($diskon_rupiah_total), // Diskon rupiah
+                'bayar' => format_uang($penjualan->bayar),
+                'kasir' => $penjualan->user->name ?? '-',
+                'nama_barang' => $nama_barang, // Nama barang dengan jumlah
+            ];
+        });
+
+        // Ambil data setting untuk logo (jika ada)
+        $setting = Setting::first();
+
+        // Load view untuk PDF
+        $pdf = PDF::loadView('penjualan.export_pdf', [
+            'data' => $data,
+            'setting' => $setting // Jika ada setting untuk logo atau informasi lain
+        ]);
+
+        // Download PDF
+        return $pdf->download('laporan_penjualan_periode.pdf');
+    }
+
+
     public function exportExcel()
     {
         return Excel::download(new PenjualanExportExcel, 'laporan_penjualan.xlsx');
     }
+
+    public function exportExcelPeriode(Request $request)
+    {
+        // Ambil parameter tanggal mulai dan tanggal akhir dari request
+        $start_date = $request->get('start_date');
+        $end_date = $request->get('end_date');
+
+        // Validasi jika parameter tanggal tidak ditemukan
+        if (!$start_date || !$end_date) {
+            abort(400, 'Tanggal mulai dan tanggal akhir diperlukan.');
+        }
+
+        // Query untuk mengambil data penjualan dengan relasi penjualan_detail dan produk
+        $penjualan = Penjualan::with(['user', 'penjualanDetail.produk'])->orderBy('id_penjualan', 'desc');
+
+        // Terapkan filter tanggal jika ada
+        $penjualan = $penjualan->whereBetween('created_at', [
+            $start_date . ' 00:00:00',  // Jam mulai
+            $end_date . ' 23:59:59'     // Jam akhir
+        ]);
+
+        // Ambil data penjualan yang sudah difilter
+        $penjualan = $penjualan->get();
+
+        // Mapping data penjualan
+        $data = $penjualan->map(function ($penjualan) {
+            $nama_barang = $penjualan->penjualanDetail->map(function ($detail) {
+                $nama_produk = $detail->produk->nama_produk ?? 'Tidak Diketahui';
+                $jumlah = $detail->jumlah;
+                return "{$nama_produk} ({$jumlah})";
+            })->implode(', ');
+
+            $diskon_persen_total = $penjualan->diskon_persen_total ?? 0;
+            $diskon_rupiah_total = $penjualan->diskon_rupiah_total ?? 0;
+
+            return [
+                'no' => $penjualan->id_penjualan, // Ganti 'ID Penjualan' dengan 'no'
+                'tanggal' => tanggal_indonesia($penjualan->created_at, false), // Pastikan key 'tanggal'
+                'total_item' => format_uang_excel($penjualan->total_item),
+                'total_harga' => format_uang_excel($penjualan->total_harga),
+                'diskon_persen' => $diskon_persen_total . '%',
+                'diskon_rupiah' => format_uang_excel($diskon_rupiah_total),
+                'bayar' => format_uang_excel($penjualan->bayar),
+                'kasir' => $penjualan->user->name ?? '-',
+                'nama_barang' => $nama_barang, // Pastikan key 'nama_barang'
+            ];
+        });
+
+        // Kirim data ke Excel
+        return Excel::download(new PenjualanExportPeriodeExcel($data), 'laporan_penjualan_periode.xlsx');
+    }
+
 
     public function getTotalPenjualan(Request $request)
     {
@@ -341,8 +465,7 @@ class PenjualanController extends Controller
         // Hitung total penjualan dalam rentang waktu yang diberikan
         $totalPenjualan = Penjualan::whereBetween('tanggal', [$startDate, $endDate])
             ->sum('bayar'); // Gantilah 'bayar' dengan nama kolom yang sesuai di database Anda
-            \Log::info($totalPenjualan);
-            
+
         return response()->json([
             'total' => number_format($totalPenjualan, 0, ',', '.')
         ]);

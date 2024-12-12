@@ -59,6 +59,41 @@
     opacity: 0.9;
 }
 
+/* Tombol Edit (Pencil) */
+.btn-info {
+    background-color: #17a2b8; /* Warna biru muda */
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn-info:hover {
+    background-color: #138496; /* Biru lebih gelap saat hover */
+}
+
+/* Tombol Hapus (Sampah) */
+.btn-danger {
+    background-color: #dc3545; /* Warna merah */
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn-danger:hover {
+    background-color: #c82333; /* Merah lebih gelap saat hover */
+}
+
+/* Group tombol (opsional untuk spasi antar tombol) */
+.btn-group button {
+    margin-right: 5px; /* Spasi antar tombol */
+}
+
 /* Responsif untuk perangkat kecil */
 @media (max-width: 768px) {
     .button-container {

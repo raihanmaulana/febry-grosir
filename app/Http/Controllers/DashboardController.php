@@ -89,6 +89,8 @@ class DashboardController extends Controller
                     $jenisHarga = 'Lusin';
                 } elseif ($jenis == 'setengah_lusin') {
                     $jenisHarga = 'Setengah Lusin';
+                } elseif ($jenis == 'pcs') {
+                    $jenisHarga = 'Pcs';
                 }
 
                 // Format output: "harga/jenis"
